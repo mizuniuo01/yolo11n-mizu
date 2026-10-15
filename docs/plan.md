@@ -254,3 +254,31 @@ python scripts/train/train.py
 - 检查工程和实验名能够定位 `best.pt`。
 - 使用 ONNX 导出验证输出目录和文件。
 - 在本机 TensorRT 环境可用时验证 engine 导出、FP16 和动态输入配置。
+
+### MaixCAM 专用导出
+
+本阶段设计：
+
+- 参考 YOLOv5 的检测头截断思路，但根据 YOLO11 的 `Detect`、`cv2`、`cv3` 和 `dfl` 结构重新实现。
+- 使用当前 MaixCAM 官方 YOLO11 两输出方案，保留 DFL box 输出和 Sigmoid class 输出，不沿用 YOLOv5 的三输出约定。
+- MaixCAM 配置按工程保存于 `configs/export/<project>/maixcam.yaml`。
+- 输入尺寸使用与对应训练工程一致的 `[height, width]` 配置。
+- 根据工程和实验名定位 `runs/detect/<project>/<experiment>/weights/best.pt`。
+- 标准导出和 MaixCAM 导出放在同一目录：`runs/export/<project>/<experiment>/`。
+- 标准 ONNX 命名为 `export_standard.onnx`，MaixCAM ONNX 命名为 `export_maixcam.onnx`。
+- MaixCAM 输出名称由配置中的 `output_names` 指定，默认使用 `out_box` 和 `out_cls`。
+- 导出使用固定输入、opset 17 和静态图；不执行 Docker 和量化。
+- 现有 YOLOv5 三输出量化脚本留待后续量化阶段根据 YOLO11 实际输出修改。
+
+本阶段产出：
+
+- `configs/export/template/maixcam.yaml`
+- `scripts/export/export_maixcam.py`
+- 标准导出文件名调整为 `export_standard.onnx`。
+
+验证方式：
+
+- 检查配置和脚本可以解析。
+- 使用真实 YOLO11 `best.pt` 导出 MaixCAM ONNX。
+- 检查 ONNX 输入形状、两个输出节点和输出形状。
+- 确认标准 ONNX 与 MaixCAM ONNX 位于同一工程实验目录。

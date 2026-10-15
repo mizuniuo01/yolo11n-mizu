@@ -110,7 +110,7 @@ def main() -> None:
     model = YOLO(str(checkpoint))
     exported = model.export(**arguments)
     source = artifact_path(exported, export_format)
-    target = output / source.name
+    target = output / ("export_standard.onnx" if export_format == "onnx" else "export_standard.engine")
     shutil.copy2(source, target)
     print(f"导出完成: {target}", flush=True)
 
