@@ -129,3 +129,50 @@
 - 检查 `unlabeled` 与 `label_model` 的图片、标签目录映射正确。
 - 检查标签目录不存在时能够自动创建。
 - 在安装 LabelImg 后启动脚本，确认 GUI 使用正确图片和标签目录。
+
+### 编写训练配置和训练脚本
+
+本阶段设计：
+
+- 主模型训练使用 Ultralytics API，训练过程中自动使用 `val` 集验证。
+- YOLO11n 预训练权重提前下载并保存为 `weights/yolo11n.pt`；训练脚本只加载本地权重，缺失时直接提示错误。
+- 训练配置按工程分目录保存：`configs/train/<project_name>/train.yaml`。
+- 配置文件集中保存工程名、实验名、数据集配置路径、权重路径和训练参数。
+- `scripts/train/train.py` 通过顶部的 `PROJECT_NAME` 选择工程配置。
+- 配置中的相对路径统一相对于项目根目录解析，不依赖当前终端工作目录。
+- 训练结果使用配置中的 `project` 和 `name` 区分，目录形式为 `runs/detect/<project_name>/<experiment_name>/`。
+- 本阶段只实现主模型训练，不包含自动打标小模型训练。
+- 训练脚本使用类型提示、函数拆分、文档字符串和 PEP 8 风格。
+
+本阶段产出：
+
+- `configs/train/template/train.yaml`
+- `scripts/train/train.py`
+- 预训练权重下载和本地加载约定。
+
+运行方式：
+
+```powershell
+.\\.venv\\Scripts\\Activate.ps1
+python -c "from ultralytics import YOLO; YOLO('yolo11n.pt')"
+python scripts/train/train.py
+```
+
+验证方式：
+
+- 检查训练配置和脚本可以解析。
+- 检查数据集配置和本地权重路径不存在时有明确错误。
+- 检查 `PROJECT_NAME` 可以选择对应工程配置。
+- 检查训练结果按工程名和实验名区分。
+- 通过一次短训练确认 CUDA GPU 可用并生成 `best.pt`。
+
+补充设计：
+
+- 本仓库面向当前开发电脑，不作为跨电脑复现工程。
+- 训练使用本机 `.venv`、PyTorch CUDA 和 RTX 5070 Ti Laptop GPU。
+- 配置固定使用 `device: 0`，CUDA 不可用时脚本直接报错，不切换 CPU。
+- `imgsz` 使用 `[height, width]` 格式，模板默认 `[640, 640]`。
+- 训练脚本在启动前打印工程、数据、权重、GPU 和结果目录，并使用 `flush=True` 保证信息及时显示。
+- Ultralytics 负责显示 epoch、batch、loss 和验证进度，训练入口不重写其进度条。
+- 直接使用本地终端运行脚本；需要无缓冲输出时使用 `python -u scripts/train/train.py`。
+- Docker 不用于训练，仅在后续阶段保留给 MaixCam 量化流程。
