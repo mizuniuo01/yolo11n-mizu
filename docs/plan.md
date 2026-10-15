@@ -202,3 +202,29 @@ python scripts/train/train.py
 - 检查小模型数据路径和权重路径。
 - 检查图片标签配对统计和缺失标签提示。
 - 使用少量人工标注数据进行 GPU 短训练，确认生成 `runs/auto_label/<project>/<experiment>/weights/best.pt`。
+
+### 编写自动打标工具脚本
+
+本阶段设计：
+
+- 自动打标工具复用第七阶段的 `configs/auto_label/<project_name>/train.yaml`。
+- 根据配置中的 `project` 和 `name` 自动定位 `runs/auto_label/<project>/<experiment>/weights/best.pt`。
+- 数据集根目录由配置中的 `label_model/data.yaml` 自动推导。
+- 输入为 `datasets/<dataset_name>/images/unlabeled/`，输出为对应的 `labels/unlabeled/`。
+- 置信度阈值、IoU 阈值和标签覆盖策略放在脚本顶部，便于频繁调整。
+- 默认覆盖已有标签，将 `OVERWRITE_LABELS` 改为 `False` 时跳过已有标签。
+- 使用 Ultralytics 批量预测和进度显示，不生成预览图，不移动图片，不写入 train/val。
+- 无检测结果时生成空的同名 `.txt` 文件。
+- 脚本使用类型提示、函数拆分和文档字符串，遵循 PEP 8。
+
+本阶段产出：
+
+- `scripts/label/auto_label.py`
+- 小模型权重定位、预测参数和标签输出约定。
+
+验证方式：
+
+- 检查脚本可以解析第七阶段配置并定位小模型权重。
+- 检查输入和输出目录推导正确。
+- 使用小样本确认生成标准 YOLO 标签和空标签文件。
+- 确认覆盖开关和 CUDA 设备检查行为。
