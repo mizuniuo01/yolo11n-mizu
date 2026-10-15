@@ -96,8 +96,11 @@ def main() -> None:
     checkpoint, (height, width), output_names = validate_config(config)
     target = output_path(config)
     model = YOLO(str(checkpoint))
-    model.model.eval()
-    replace_detect_forward(model.model)
+    network = model.model
+    if not isinstance(network, nn.Module):
+        raise TypeError("YOLO 模型未提供可导出的 PyTorch 网络")
+    network.eval()
+    replace_detect_forward(network)
 
     dummy_input = torch.zeros(1, 3, height, width)
     print(f"输入权重: {checkpoint}", flush=True)
@@ -106,8 +109,8 @@ def main() -> None:
     print(f"输出文件: {target}", flush=True)
 
     torch.onnx.export(
-        model.model,
-        dummy_input,
+        network,
+        (dummy_input,),
         str(target),
         opset_version=int(config.get("opset", 17)),
         input_names=[str(config.get("input_name", "images"))],
