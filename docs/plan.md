@@ -13,7 +13,7 @@
 9. 编写通用导出脚本
 10. 编写 MaixCam 专用导出脚本
 11. 接入现有 Docker 量化流程
-12. 全流程测试
+12. 全流程测试并整理仓库
 13. 配置 gitignore
 14. 编写 README
 15. 编写 GUIDE
@@ -104,3 +104,28 @@
 - `scripts/data/capture_video.py`
 - `scripts/data/split_dataset.py`
 - 视频目录、抽帧输出和随机划分规则说明。
+
+### 准备打标工具
+
+本阶段设计：
+
+- 使用当前 `.venv` 中的 LabelImg 作为人工标注工具。
+- 通过 `scripts/label/start_labeling.py` 启动，不直接复制 YOLOv5 的旧入口。
+- 脚本顶部配置数据集名称和标注目标，可在 `unlabeled` 与 `label_model` 之间切换。
+- `unlabeled` 模式打开 `images/unlabeled/`，标签保存到 `labels/unlabeled/`。
+- `label_model` 模式根据 `train` 或 `val` 配置打开小模型数据目录，并保存到对应的 `label_model/labels/` 目录。
+- 类别名称从对应的 `data.yaml` 读取，生成 LabelImg 使用的临时类别文件，避免重复维护类别列表。
+- 工具只负责启动人工标注界面和保存标签，不执行自动预测、数据移动或训练集划分。
+- 脚本使用顶部配置、`pathlib`、类型提示和函数拆分，遵循 PEP 8。
+
+本阶段产出：
+
+- `scripts/label/start_labeling.py`
+- LabelImg 的数据目录映射和类别配置约定。
+
+验证方式：
+
+- 检查脚本可以解析对应 `data.yaml` 的类别名称。
+- 检查 `unlabeled` 与 `label_model` 的图片、标签目录映射正确。
+- 检查标签目录不存在时能够自动创建。
+- 在安装 LabelImg 后启动脚本，确认 GUI 使用正确图片和标签目录。
