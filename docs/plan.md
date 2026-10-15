@@ -282,3 +282,28 @@ python scripts/train/train.py
 - 使用真实 YOLO11 `best.pt` 导出 MaixCAM ONNX。
 - 检查 ONNX 输入形状、两个输出节点和输出形状。
 - 确认标准 ONNX 与 MaixCAM ONNX 位于同一工程实验目录。
+
+### 接入 YOLO11 Docker 量化流程
+
+本阶段设计：
+
+- TPU-MLIR 不安装到项目 `.venv`，使用 Docker Desktop 提供转换环境。
+- 保留外部 YOLOv5 量化脚本 `D:/docker_data/models/convert_yolov5_to_cvimodel.sh` 不变。
+- 新增独立脚本 `D:/docker_data/models/convert_yolo11_to_cvimodel.sh`。
+- YOLO11 量化输入为 `export_maixcam.onnx`，使用固定 `[1,3,160,256]` 输入和 `cv181x` 处理器。
+- 使用 YOLO11 MaixCAM 双输出名称 `out_box,out_cls`，不沿用 YOLOv5 的 `out0,out1,out2`。
+- 脚本先生成 MLIR 和 BF16 模型，再使用真实场景图片生成校准表并生成 INT8 `.cvimodel`。
+- 脚本检查模型、测试图片和校准图片目录，校准图片不足时自动使用实际数量。
+- 本阶段不新增项目内量化启动器，不自动启动 Docker，不修改外部 YOLOv5 脚本。
+
+本阶段产出：
+
+- `D:/docker_data/models/convert_yolo11_to_cvimodel.sh`
+- YOLO11 TPU-MLIR 输入、输出和执行约定。
+
+验证方式：
+
+- 在 TPU-MLIR Docker 容器中检查脚本语法和工具命令。
+- 使用 `export_maixcam.onnx` 完成 MLIR 转换。
+- 生成 BF16 和 INT8 `.cvimodel`。
+- 检查原 YOLOv5 量化脚本未被修改。
