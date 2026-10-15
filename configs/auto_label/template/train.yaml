@@ -1,0 +1,12 @@
+# Training configuration for the automatic-labeling model.
+project: template
+name: exp01
+
+data: datasets/template/label_model/data.yaml
+weights: weights/yolo11n.pt
+
+epochs: 100
+imgsz: [320, 320]
+batch: 8
+device: 0
+workers: 0

@@ -176,3 +176,29 @@ python scripts/train/train.py
 - Ultralytics 负责显示 epoch、batch、loss 和验证进度，训练入口不重写其进度条。
 - 直接使用本地终端运行脚本；需要无缓冲输出时使用 `python -u scripts/train/train.py`。
 - Docker 不用于训练，仅在后续阶段保留给 MaixCam 量化流程。
+
+### 编写自动打标小模型脚本
+
+本阶段设计：
+
+- 自动打标小模型使用少量人工准备的 `label_model/` 数据训练。
+- 小模型使用独立配置目录 `configs/auto_label/<project_name>/train.yaml` 和独立入口 `scripts/train/train_auto_label.py`。
+- 初始权重继续使用本地 `weights/yolo11n.pt`，不在训练脚本中自动联网下载。
+- 训练前检查 train/val 图片与同名标签的配对情况，并报告缺失标签。
+- 小模型采用独立的较小输入尺寸和训练参数，以便快速获得预标注模型。
+- 训练结果与主模型保持相同的工程和实验层级，保存到 `runs/auto_label/<project_name>/<experiment_name>/`。
+- 训练完成后的 `best.pt` 作为下一阶段自动打标工具的输入。
+- 本阶段仍使用本机 `.venv`、CUDA device 0 和 Ultralytics 的终端进度显示。
+- 脚本使用类型提示、函数拆分和文档字符串，遵循 PEP 8。
+
+本阶段产出：
+
+- `configs/auto_label/template/train.yaml`
+- `scripts/train/train_auto_label.py`
+
+验证方式：
+
+- 检查配置和脚本可以解析。
+- 检查小模型数据路径和权重路径。
+- 检查图片标签配对统计和缺失标签提示。
+- 使用少量人工标注数据进行 GPU 短训练，确认生成 `runs/auto_label/<project>/<experiment>/weights/best.pt`。
