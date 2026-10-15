@@ -1,0 +1,7 @@
+# Replace this template with the dataset-specific configuration.
+path: .
+train: images/train
+val: images/val
+
+names:
+  0: class_name
