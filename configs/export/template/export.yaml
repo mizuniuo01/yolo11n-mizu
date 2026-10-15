@@ -1,0 +1,9 @@
+# Generic export configuration.
+project: template
+experiment: exp01
+
+format: onnx
+imgsz: [640, 640]
+dynamic: false
+half: false
+device: 0

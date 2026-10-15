@@ -228,3 +228,29 @@ python scripts/train/train.py
 - 检查输入和输出目录推导正确。
 - 使用小样本确认生成标准 YOLO 标签和空标签文件。
 - 确认覆盖开关和 CUDA 设备检查行为。
+
+### 编写通用导出脚本
+
+本阶段设计：
+
+- 通用导出支持 ONNX 和 TensorRT 两种格式，格式由配置选择。
+- 导出配置按工程保存于 `configs/export/<project>/export.yaml`。
+- 根据 `project` 和 `experiment` 自动定位主模型 `runs/detect/<project>/<experiment>/weights/best.pt`。
+- 导出结果统一复制到 `runs/export/<project>/<experiment>/`。
+- 默认使用静态输入，`dynamic` 可在配置中开启。
+- TensorRT 默认使用 FP16，使用 `half` 字段切换；`amp` 只属于训练，不参与导出。
+- 导出使用当前本机 CUDA 环境，不自动安装 TensorRT 或其他导出依赖。
+- 本阶段不处理 MaixCam 特殊输出和 INT8 量化。
+- 脚本使用类型提示、函数拆分和文档字符串，遵循 PEP 8。
+
+本阶段产出：
+
+- `configs/export/template/export.yaml`
+- `scripts/export/export.py`
+
+验证方式：
+
+- 检查配置和脚本可以解析。
+- 检查工程和实验名能够定位 `best.pt`。
+- 使用 ONNX 导出验证输出目录和文件。
+- 在本机 TensorRT 环境可用时验证 engine 导出、FP16 和动态输入配置。
