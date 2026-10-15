@@ -1,0 +1,7 @@
+# Configuration for the small model used for automatic labeling.
+path: .
+train: images/train
+val: images/val
+
+names:
+  0: class_name
