@@ -259,18 +259,25 @@ python scripts/train/train.py
 
 ### MaixCAM 专用导出
 
+方案调整：
+
+- YOLOv5 只作为流程参考；YOLO11 不复制 YOLOv5 的三尺度 `Detect.forward` 截断实现。
+- `scripts/export/export_maixcam.py` 先导出标准 YOLO11 ONNX，再按 MaixCAM 官方 YOLO11 节点裁剪 Detect 头。
+- YOLO11 裁剪节点为 `/model.23/dfl/conv/Conv_output_0` 和 `/model.23/Sigmoid_output_0`，裁剪后重命名为 `out_box` 和 `out_cls`。
+- `/mnt/d/docker_data/models/convert_yolo11_to_cvimodel.sh` 只负责 TPU-MLIR Docker 转换和量化，不再使用 YOLOv5 的 `out0,out1,out2`。
+- `.mud` 沿用已取得的 YOLO11 模板，引用量化脚本生成的 `auto_aim.cvimodel`。
+
 本阶段设计：
 
-- 参考 YOLOv5 的检测头截断思路，但根据 YOLO11 的 `Detect`、`cv2`、`cv3` 和 `dfl` 结构重新实现。
+- 参考 YOLOv5 的工作流，但按 YOLO11 官方节点方案截断 Detect 头。
 - 使用当前 MaixCAM 官方 YOLO11 两输出方案，保留 DFL box 输出和 Sigmoid class 输出，不沿用 YOLOv5 的三输出约定。
 - MaixCAM 配置按工程保存于 `configs/export/<project>/maixcam.yaml`。
 - 输入尺寸使用与对应训练工程一致的 `[height, width]` 配置。
 - 根据工程和实验名定位 `runs/detect/<project>/<experiment>/weights/best.pt`。
 - 标准导出和 MaixCAM 导出放在同一目录：`runs/export/<project>/<experiment>/`。
 - 标准 ONNX 命名为 `export_standard.onnx`，MaixCAM ONNX 命名为 `export_maixcam.onnx`。
-- MaixCAM 输出名称由配置中的 `output_names` 指定，默认使用 `out_box` 和 `out_cls`。
-- 导出使用固定输入、opset 17 和静态图；不执行 Docker 和量化。
-- 现有 YOLOv5 三输出量化脚本留待后续量化阶段根据 YOLO11 实际输出修改。
+- 官方源节点和裁剪后输出名称由 `maixcam.yaml` 配置。
+- 导出使用固定输入、opset 17 和静态图；Docker shell 负责后续 TPU-MLIR 转换和量化。
 
 本阶段产出：
 
@@ -292,7 +299,7 @@ python scripts/train/train.py
 - TPU-MLIR 不安装到项目 `.venv`，使用 Docker Desktop 提供转换环境。
 - 保留外部 YOLOv5 量化脚本 `D:/docker_data/models/convert_yolov5_to_cvimodel.sh` 不变。
 - 新增独立脚本 `D:/docker_data/models/convert_yolo11_to_cvimodel.sh`。
-- YOLO11 量化输入为 `export_maixcam.onnx`，使用固定 `[1,3,160,256]` 输入和 `cv181x` 处理器。
+- YOLO11 量化输入为 `export_maixcam.onnx`，使用固定 `[1,3,224,320]` 输入和 `cv181x` 处理器。
 - 使用 YOLO11 MaixCAM 双输出名称 `out_box,out_cls`，不沿用 YOLOv5 的 `out0,out1,out2`。
 - 脚本先生成 MLIR 和 BF16 模型，再使用真实场景图片生成校准表并生成 INT8 `.cvimodel`。
 - 脚本检查模型、测试图片和校准图片目录，校准图片不足时自动使用实际数量。

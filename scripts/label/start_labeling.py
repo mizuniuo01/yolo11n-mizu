@@ -12,7 +12,7 @@ import yaml
 
 # Edit this section before running the script.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATASET_NAME = "auto_aim"
+DATASET_NAME = "template"
 LABEL_TARGET = "unlabeled"  # "unlabeled" or "label_model"
 LABEL_MODEL_SPLIT = "train"  # Used when LABEL_TARGET is "label_model".
 LABELIMG_COMMAND = PROJECT_ROOT / ".venv" / "Scripts" / "labelImg.exe"

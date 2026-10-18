@@ -1,16 +1,14 @@
-"""Export YOLO11 detection outputs for the MaixCAM conversion workflow."""
+"""Export and truncate a YOLO11 ONNX model for MaixCAM."""
 
 from __future__ import annotations
 
-import types
 from pathlib import Path
 from typing import Any
 
+import onnx
 import torch
 import yaml
-from torch import nn
 from ultralytics import YOLO
-from ultralytics.nn.modules import Detect
 
 # Edit this value to select a project under configs/export/.
 PROJECT_NAME = "template"
@@ -25,7 +23,7 @@ def config_path() -> Path:
 
 
 def load_config(path: Path) -> dict[str, Any]:
-    """Load and validate a MaixCAM YAML configuration."""
+    """Load and validate a MaixCAM export configuration."""
     if not path.is_file():
         raise FileNotFoundError(f"MaixCAM 配置不存在: {path}")
     with path.open(encoding="utf-8") as stream:
@@ -43,7 +41,7 @@ def checkpoint_path(config: dict[str, Any]) -> Path:
 
 
 def output_path(config: dict[str, Any]) -> Path:
-    """Return the MaixCAM ONNX output path."""
+    """Return the truncated MaixCAM ONNX path."""
     project = str(config.get("project", PROJECT_NAME))
     experiment = str(config.get("experiment", "exp01"))
     directory = PROJECT_ROOT / "runs" / "export" / project / experiment
@@ -51,73 +49,103 @@ def output_path(config: dict[str, Any]) -> Path:
     return directory / "export_maixcam.onnx"
 
 
-def maixcam_forward(self: Detect, features: list[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return YOLO11 DFL box and sigmoid class outputs without NMS."""
-    batch_size = features[0].shape[0]
-    box_outputs = [
-        self.cv2[index](features[index]).view(batch_size, 4 * self.reg_max, -1)
-        for index in range(self.nl)
-    ]
-    class_outputs = [
-        self.cv3[index](features[index]).view(batch_size, self.nc, -1)
-        for index in range(self.nl)
-    ]
-    boxes = self.dfl(torch.cat(box_outputs, dim=2))
-    classes = torch.cat(class_outputs, dim=2).sigmoid()
-    return boxes, classes
+def truncate_outputs(
+    source: Path,
+    target: Path,
+    input_name: str,
+    source_outputs: list[str],
+    output_names: list[str],
+) -> None:
+    """Extract the official YOLO11 Detect outputs and rename them."""
+    if len(source_outputs) != 2 or len(output_names) != 2:
+        raise ValueError("YOLO11 MaixCAM 必须配置两个输入输出节点")
 
+    model = onnx.load(str(source))
+    graph_values = {
+        value.name
+        for value in (*model.graph.value_info, *model.graph.output)
+    }
+    graph_values.update(
+        output
+        for node in model.graph.node
+        for output in node.output
+    )
+    missing = [name for name in source_outputs if name not in graph_values]
+    if missing:
+        raise RuntimeError(
+            "YOLO11 Detect 输出节点不存在，请用 Netron 检查导出图: "
+            + ", ".join(missing)
+        )
 
-def replace_detect_forward(model: nn.Module) -> None:
-    """Replace the YOLO11 Detect forward method with MaixCAM outputs."""
-    detect_modules = [module for module in model.modules() if isinstance(module, Detect)]
-    if len(detect_modules) != 1:
-        raise RuntimeError(f"期望找到一个 Detect 模块，实际找到 {len(detect_modules)} 个")
-    detect = detect_modules[0]
-    detect.forward = types.MethodType(maixcam_forward, detect)
-
-
-def validate_config(config: dict[str, Any]) -> tuple[Path, tuple[int, int], list[str]]:
-    """Validate paths, input size and output names."""
-    checkpoint = checkpoint_path(config)
-    if not checkpoint.is_file():
-        raise FileNotFoundError(f"训练权重不存在: {checkpoint}")
-    imgsz = config.get("imgsz", [160, 256])
-    if not isinstance(imgsz, list) or len(imgsz) != 2:
-        raise ValueError("imgsz 必须是 [height, width]")
-    output_names = config.get("output_names", ["out_box", "out_cls"])
-    if not isinstance(output_names, list) or len(output_names) != 2:
-        raise ValueError("output_names 必须包含两个输出名称")
-    return checkpoint, (int(imgsz[0]), int(imgsz[1])), [str(name) for name in output_names]
+    extracted = target.with_suffix(".tmp.onnx")
+    onnx.utils.extract_model(
+        str(source),
+        str(extracted),
+        [input_name],
+        source_outputs,
+    )
+    truncated = onnx.load(str(extracted))
+    if len(truncated.graph.output) != 2:
+        raise RuntimeError("YOLO11 MaixCAM 截断结果不是两个输出")
+    for value, name in zip(truncated.graph.output, output_names):
+        old_name = value.name
+        for node in truncated.graph.node:
+            node.output[:] = [
+                name if output == old_name else output
+                for output in node.output
+            ]
+        value.name = name
+    onnx.checker.check_model(truncated)
+    onnx.save(truncated, str(target))
+    extracted.unlink()
 
 
 def main() -> None:
-    """Export the configured YOLO11 checkpoint for MaixCAM."""
+    """Export and truncate the configured YOLO11 checkpoint."""
     config = load_config(config_path())
-    checkpoint, (height, width), output_names = validate_config(config)
+    checkpoint = checkpoint_path(config)
+    if not checkpoint.is_file():
+        raise FileNotFoundError(f"训练权重不存在: {checkpoint}")
+
+    imgsz = config.get("imgsz", [224, 320])
+    if not isinstance(imgsz, list) or len(imgsz) != 2:
+        raise ValueError("imgsz 必须是 [height, width]")
+    if any(int(size) <= 0 or int(size) % 32 != 0 for size in imgsz):
+        raise ValueError("imgsz 的 height 和 width 必须是 32 的倍数")
+
     target = output_path(config)
-    model = YOLO(str(checkpoint))
-    network = model.model
-    if not isinstance(network, nn.Module):
-        raise TypeError("YOLO 模型未提供可导出的 PyTorch 网络")
-    network.eval()
-    replace_detect_forward(network)
+    source_outputs = config.get("source_output_names")
+    output_names = config.get("output_names")
+    input_name = str(config.get("input_name", "images"))
+    if not isinstance(source_outputs, list) or not isinstance(output_names, list):
+        raise ValueError("必须配置 source_output_names 和 output_names")
+    source_outputs = [str(name) for name in source_outputs]
+    output_names = [str(name) for name in output_names]
+    export_args = {
+        "format": "onnx",
+        "imgsz": [int(imgsz[0]), int(imgsz[1])],
+        "opset": int(config.get("opset", 17)),
+        "simplify": bool(config.get("simplify", True)),
+        "dynamic": bool(config.get("dynamic", False)),
+    }
+    if not torch.cuda.is_available():
+        raise RuntimeError("本机 MaixCAM 导出需要 CUDA device=0。")
 
-    dummy_input = torch.zeros(1, 3, height, width)
     print(f"输入权重: {checkpoint}", flush=True)
-    print(f"输入形状: [1, 3, {height}, {width}]", flush=True)
-    print(f"输出名称: {output_names}", flush=True)
+    print(f"导出参数: {export_args}", flush=True)
     print(f"输出文件: {target}", flush=True)
-
-    torch.onnx.export(
-        network,
-        (dummy_input,),
-        str(target),
-        opset_version=int(config.get("opset", 17)),
-        input_names=[str(config.get("input_name", "images"))],
-        output_names=output_names,
-        dynamo=False,
+    exported = YOLO(str(checkpoint)).export(**export_args)
+    source = Path(exported)
+    if not source.is_file():
+        raise FileNotFoundError(f"标准 ONNX 导出产物不存在: {source}")
+    truncate_outputs(
+        source,
+        target,
+        input_name,
+        source_outputs,
+        output_names,
     )
-    print(f"MaixCAM 导出完成: {target}", flush=True)
+    print(f"导出完成: {target}", flush=True)
 
 
 if __name__ == "__main__":

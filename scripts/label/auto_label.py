@@ -11,7 +11,7 @@ from ultralytics import YOLO
 from tqdm import tqdm
 
 # Edit these values before running the script.
-PROJECT_NAME = "auto_aim"
+PROJECT_NAME = "template"
 CONFIDENCE_THRESHOLD = 0.5
 IOU_THRESHOLD = 0.45
 OVERWRITE_LABELS = False

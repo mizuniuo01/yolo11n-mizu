@@ -75,9 +75,12 @@ def export_arguments(config: dict[str, Any], export_format: str) -> dict[str, An
         "format": export_format,
         "imgsz": config.get("imgsz", [640, 640]),
         "dynamic": bool(config.get("dynamic", False)),
-        "half": bool(config.get("half", export_format == "engine")),
+        "simplify": bool(config.get("simplify", True)),
+        "opset": config.get("opset"),
         "device": config.get("device", 0),
     }
+    if export_format == "engine":
+        arguments["half"] = bool(config.get("half", True))
     if export_format == "engine" and arguments["device"] != 0:
         raise ValueError("TensorRT 导出必须使用 device: 0")
     return arguments

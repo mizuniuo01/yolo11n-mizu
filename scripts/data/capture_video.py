@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 # Edit this section before running the script.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATASET_NAME = "auto_aim"
+DATASET_NAME = "template"
 FRAMES_PER_SECOND = 9.0
 IMAGE_EXTENSION = ".jpg"
 OVERWRITE_EXISTING = False

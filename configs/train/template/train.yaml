@@ -5,10 +5,11 @@ name: exp01
 data: datasets/template/data.yaml
 weights: weights/yolo11n.pt
 
-epochs: 100
-imgsz: 640
+epochs: 150
+patience: 50
+imgsz: 320
 batch: -1
 device: 0
-workers: 0
+workers: 4
 cache: 'ram'
-amp: false
+amp: true

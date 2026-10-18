@@ -3,7 +3,8 @@ project: template
 experiment: exp01
 
 format: onnx
-imgsz: [640, 640]
+imgsz: [320, 320]
 dynamic: false
-half: false
+simplify: true
+opset: 17
 device: 0

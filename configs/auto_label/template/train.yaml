@@ -6,9 +6,10 @@ data: datasets/template/label_model/data.yaml
 weights: weights/yolo11n.pt
 
 epochs: 100
-imgsz: [320, 320]
+patience: 50
+imgsz: 320
 batch: -1
 device: 0
-workers: 2
+workers: 4
 cache: 'ram'
-amp: false
+amp: true
