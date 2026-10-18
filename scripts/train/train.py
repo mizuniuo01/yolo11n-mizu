@@ -61,6 +61,10 @@ def training_arguments(config: dict[str, Any], data_path: Path) -> dict[str, Any
     arguments = dict(config)
     arguments.pop("weights", None)
     arguments["data"] = str(data_path)
+    project_name = str(arguments.get("project", PROJECT_NAME))
+    arguments["project"] = str(
+        (PROJECT_ROOT / "runs" / "detect" / project_name).resolve()
+    )
     return arguments
 
 
@@ -84,7 +88,10 @@ def print_training_info(
     print(f"数据配置: {data_path}", flush=True)
     print(f"预训练权重: {weights_path}", flush=True)
     print(f"训练设备: CUDA:0 ({torch.cuda.get_device_name(0)})", flush=True)
-    print(f"训练结果: runs/detect/{project}/{experiment}", flush=True)
+    print(
+        f"训练结果: {PROJECT_ROOT / 'runs' / 'detect' / project / experiment}",
+        flush=True,
+    )
 
 
 def main() -> None:

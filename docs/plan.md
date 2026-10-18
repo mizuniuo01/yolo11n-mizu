@@ -82,8 +82,8 @@
 
 本阶段设计：
 
-- 视频按数据集和项目名保存于 `datasets/<dataset_name>/videos/<project_name>/`。
-- 抽帧脚本处理项目目录中的全部支持格式视频。
+- 每个数据集对应一个项目，视频直接保存于 `datasets/<dataset_name>/videos/`。
+- 抽帧脚本处理数据集视频目录中的全部支持格式视频。
 - 输出图片写入对应数据集的 `images/unlabeled/`。
 - 所有视频共用六位数字连续编号，避免不同视频产生重名。
 - 抽帧参数集中写在脚本顶部，脚本使用 `pathlib`、OpenCV 和 `tqdm`，遵循 PEP 8。

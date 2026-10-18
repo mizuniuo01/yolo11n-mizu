@@ -1,0 +1,13 @@
+# MaixCAM-specific YOLO11 export configuration.
+project: template
+experiment: exp01
+
+imgsz: [160, 256]
+opset: 17
+dynamic: false
+simplify: true
+input_name: images
+
+output_names:
+  - out_box
+  - out_cls

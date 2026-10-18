@@ -1,0 +1,14 @@
+# Main YOLO11 training configuration.
+project: auto_aim
+name: exp01
+
+data: datasets/auto_aim/data.yaml
+weights: weights/yolo11n.pt
+
+epochs: 100
+imgsz: 320
+batch: -1
+device: 0
+workers: 2
+cache: 'ram'
+amp: false

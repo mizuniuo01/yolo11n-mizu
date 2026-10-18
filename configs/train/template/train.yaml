@@ -6,7 +6,9 @@ data: datasets/template/data.yaml
 weights: weights/yolo11n.pt
 
 epochs: 100
-imgsz: [640, 640]
-batch: 16
+imgsz: 640
+batch: -1
 device: 0
 workers: 0
+cache: 'ram'
+amp: false

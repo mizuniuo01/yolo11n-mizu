@@ -1,0 +1,9 @@
+# Generic export configuration.
+project: auto_aim
+experiment: exp01
+
+format: onnx
+imgsz: [240, 320]
+dynamic: false
+half: false
+device: 0
