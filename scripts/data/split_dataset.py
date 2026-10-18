@@ -9,7 +9,7 @@ from pathlib import Path
 
 # Edit this section before running the script.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATASET_NAME = "template"
+DATASET_NAME = "auto_aim"
 TRAIN_RATIO = 0.8
 RANDOM_SEED = 0
 OVERWRITE_EXISTING = False
