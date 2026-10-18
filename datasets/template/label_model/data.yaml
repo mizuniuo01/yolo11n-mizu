@@ -1,5 +1,5 @@
 # Configuration for the small model used for automatic labeling.
-path: .
+path: ./datasets/template/label_model
 train: images/train
 val: images/val
 

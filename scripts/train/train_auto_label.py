@@ -10,7 +10,7 @@ import yaml
 from ultralytics import YOLO
 
 # Edit this value to select a project under configs/auto_label/.
-PROJECT_NAME = "template"
+PROJECT_NAME = "auto_aim"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_ROOT = PROJECT_ROOT / "configs" / "auto_label"

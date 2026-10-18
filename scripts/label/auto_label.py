@@ -8,12 +8,14 @@ from typing import Any
 import torch
 import yaml
 from ultralytics import YOLO
+from tqdm import tqdm
 
 # Edit these values before running the script.
-PROJECT_NAME = "template"
+PROJECT_NAME = "auto_aim"
 CONFIDENCE_THRESHOLD = 0.5
 IOU_THRESHOLD = 0.45
-OVERWRITE_LABELS = True
+OVERWRITE_LABELS = False
+BATCH_SIZE = 16
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_ROOT = PROJECT_ROOT / "configs" / "auto_label"
@@ -121,18 +123,24 @@ def main() -> None:
         conf=CONFIDENCE_THRESHOLD,
         iou=IOU_THRESHOLD,
         device=config.get("device", 0),
+        batch=BATCH_SIZE,
         save=False,
-        verbose=True,
+        verbose=False,
         stream=True,
     )
-    for image_path, result in zip(images, results):
-        label_path = label_dir / f"{image_path.stem}.txt"
-        if label_path.exists() and not OVERWRITE_LABELS:
-            skipped += 1
-            continue
-        has_detections = write_labels(result, label_path)
-        generated += 1
-        empty += int(not has_detections)
+    with tqdm(total=len(images), desc="自动打标", unit="image") as progress:
+        for image_path, result in zip(images, results):
+            label_path = label_dir / f"{image_path.stem}.txt"
+            if label_path.exists() and not OVERWRITE_LABELS:
+                skipped += 1
+            else:
+                has_detections = write_labels(result, label_path)
+                generated += 1
+                empty += int(not has_detections)
+            progress.update(1)
+            progress.set_postfix(
+                generated=generated, skipped=skipped, empty=empty
+            )
 
     print(f"图片总数: {len(images)}", flush=True)
     print(f"生成标签: {generated}", flush=True)

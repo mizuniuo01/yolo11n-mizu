@@ -1,5 +1,5 @@
 # Replace this template with the dataset-specific configuration.
-path: .
+path: ./datasets/template
 train: images/train
 val: images/val
 
