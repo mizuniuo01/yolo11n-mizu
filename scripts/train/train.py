@@ -56,7 +56,9 @@ def validate_config(config: dict[str, Any]) -> tuple[Path, Path]:
     return data_path, weights_path
 
 
-def training_arguments(config: dict[str, Any], data_path: Path) -> dict[str, Any]:
+def training_arguments(
+    config: dict[str, Any], data_path: Path
+) -> dict[str, Any]:
     """根据工程配置构造 Ultralytics 训练参数。"""
     arguments = dict(config)
     arguments.pop("weights", None)
@@ -74,7 +76,9 @@ def validate_device(arguments: dict[str, Any]) -> None:
     if device != 0:
         raise ValueError("本机训练配置必须使用 device: 0")
     if not torch.cuda.is_available():
-        raise RuntimeError("CUDA 不可用，请检查本机 NVIDIA 驱动和 PyTorch CUDA 环境。")
+        raise RuntimeError(
+            "CUDA 不可用，请检查本机 NVIDIA 驱动和 PyTorch CUDA 环境。"
+        )
 
 
 def print_training_info(

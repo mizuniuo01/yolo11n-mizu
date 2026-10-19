@@ -37,7 +37,10 @@ def find_samples(dataset: Path) -> tuple[list[Sample], int]:
     samples = []
 
     for image_path in sorted(image_directory.iterdir()):
-        if not image_path.is_file() or image_path.suffix.lower() not in IMAGE_EXTENSIONS:
+        if (
+            not image_path.is_file()
+            or image_path.suffix.lower() not in IMAGE_EXTENSIONS
+        ):
             continue
         label_path = label_directory / f"{image_path.stem}.txt"
         if label_path.is_file():
@@ -54,8 +57,12 @@ def copy_sample(sample: Sample, dataset: Path, split: str) -> None:
     image_target.parent.mkdir(parents=True, exist_ok=True)
     label_target.parent.mkdir(parents=True, exist_ok=True)
 
-    if not OVERWRITE_EXISTING and (image_target.exists() or label_target.exists()):
-        raise FileExistsError(f"目标文件已存在: {image_target} 或 {label_target}")
+    if not OVERWRITE_EXISTING and (
+        image_target.exists() or label_target.exists()
+    ):
+        raise FileExistsError(
+            f"目标文件已存在: {image_target} 或 {label_target}"
+        )
     shutil.copy2(sample.image, image_target)
     shutil.copy2(sample.label, label_target)
 
@@ -71,7 +78,10 @@ def main() -> None:
     if not samples:
         raise RuntimeError("没有找到同时存在图片和标签的样本")
 
-    print(f"[检查] 找到 {len(samples)} 个配对样本，缺少标签 {missing_labels} 张", flush=True)
+    print(
+        f"[检查] 找到 {len(samples)} 个配对样本，缺少标签 {missing_labels} 张",
+        flush=True,
+    )
     random.Random(RANDOM_SEED).shuffle(samples)
     train_count = round(len(samples) * TRAIN_RATIO)
     train_samples = samples[:train_count]

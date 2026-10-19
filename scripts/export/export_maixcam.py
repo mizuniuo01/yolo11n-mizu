@@ -37,7 +37,15 @@ def checkpoint_path(config: dict[str, Any]) -> Path:
     """返回由工程和实验确定的训练权重。"""
     project = str(config.get("project", PROJECT_NAME))
     experiment = str(config.get("experiment", "exp01"))
-    return PROJECT_ROOT / "runs" / "detect" / project / experiment / "weights" / "best.pt"
+    return (
+        PROJECT_ROOT
+        / "runs"
+        / "detect"
+        / project
+        / experiment
+        / "weights"
+        / "best.pt"
+    )
 
 
 def output_path(config: dict[str, Any]) -> Path:
@@ -62,13 +70,10 @@ def truncate_outputs(
 
     model = onnx.load(str(source))
     graph_values = {
-        value.name
-        for value in (*model.graph.value_info, *model.graph.output)
+        value.name for value in (*model.graph.value_info, *model.graph.output)
     }
     graph_values.update(
-        output
-        for node in model.graph.node
-        for output in node.output
+        output for node in model.graph.node for output in node.output
     )
     missing = [name for name in source_outputs if name not in graph_values]
     if missing:
@@ -117,7 +122,9 @@ def main() -> None:
     source_outputs = config.get("source_output_names")
     output_names = config.get("output_names")
     input_name = str(config.get("input_name", "images"))
-    if not isinstance(source_outputs, list) or not isinstance(output_names, list):
+    if not isinstance(source_outputs, list) or not isinstance(
+        output_names, list
+    ):
         raise ValueError("必须配置 source_output_names 和 output_names")
     source_outputs = [str(name) for name in source_outputs]
     output_names = [str(name) for name in output_names]

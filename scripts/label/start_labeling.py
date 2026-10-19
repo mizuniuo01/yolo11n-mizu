@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib.util
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -55,7 +54,10 @@ def load_class_names(path: Path) -> list[str]:
     if isinstance(names, list):
         return [str(name) for name in names]
     if isinstance(names, dict):
-        return [str(names[index]) for index in sorted(names, key=lambda item: int(item))]
+        return [
+            str(names[index])
+            for index in sorted(names, key=lambda item: int(item))
+        ]
     raise ValueError(f"配置中缺少有效的 names 字段: {path}")
 
 
@@ -84,21 +86,32 @@ def patch_labelimg_compatibility() -> None:
             )
         },
         "libs.canvas": {
-            "p.drawRect(left_top.x(), left_top.y(), rect_width, rect_height)": (
+            (
+                "p.drawRect(left_top.x(), left_top.y(), rect_width, "
+                "rect_height)"
+            ): (
                 "p.drawRect(\n"
                 "                int(left_top.x()), int(left_top.y()), "
                 "int(rect_width), int(rect_height)\n"
                 "            )"
             ),
-            "p.drawLine(self.prev_point.x(), 0, self.prev_point.x(), self.pixmap.height())": (
+            (
+                "p.drawLine(self.prev_point.x(), 0, self.prev_point.x(), "
+                "self.pixmap.height())"
+            ): (
                 "p.drawLine(\n"
-                "                int(self.prev_point.x()), 0, int(self.prev_point.x()), "
+                "                int(self.prev_point.x()), 0, "
+                "int(self.prev_point.x()), "
                 "self.pixmap.height()\n"
                 "            )"
             ),
-            "p.drawLine(0, self.prev_point.y(), self.pixmap.width(), self.prev_point.y())": (
+            (
+                "p.drawLine(0, self.prev_point.y(), self.pixmap.width(), "
+                "self.prev_point.y())"
+            ): (
                 "p.drawLine(\n"
-                "                0, int(self.prev_point.y()), self.pixmap.width(), "
+                "                0, int(self.prev_point.y()), "
+                "self.pixmap.width(), "
                 "int(self.prev_point.y())\n"
                 "            )"
             ),
@@ -138,7 +151,9 @@ def main() -> None:
     print(f"标签目录: {label_dir}")
     print(f"类别配置: {data_file}")
     if not LABELIMG_COMMAND.is_file():
-        raise FileNotFoundError(f"LabelImg executable not found: {LABELIMG_COMMAND}")
+        raise FileNotFoundError(
+            f"LabelImg executable not found: {LABELIMG_COMMAND}"
+        )
     subprocess.run(command, check=True)
     print("[完成] LabelImg 已退出", flush=True)
 

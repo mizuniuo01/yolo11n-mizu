@@ -70,7 +70,10 @@ def count_pairs(image_dir: Path, label_dir: Path) -> tuple[int, int]:
     image_count = 0
     missing_count = 0
     for image_path in image_dir.iterdir():
-        if not image_path.is_file() or image_path.suffix.lower() not in IMAGE_EXTENSIONS:
+        if (
+            not image_path.is_file()
+            or image_path.suffix.lower() not in IMAGE_EXTENSIONS
+        ):
             continue
         image_count += 1
         if not (label_dir / f"{image_path.stem}.txt").is_file():
@@ -92,12 +95,16 @@ def validate_dataset(data_path: Path) -> tuple[int, int, int, int]:
     return train_images, train_missing, val_images, val_missing
 
 
-def training_arguments(config: dict[str, Any], data_path: Path) -> dict[str, Any]:
+def training_arguments(
+    config: dict[str, Any], data_path: Path
+) -> dict[str, Any]:
     """构造 Ultralytics 参数和绝对输出路径。"""
     arguments = dict(config)
     arguments.pop("weights", None)
     project = str(arguments.get("project", PROJECT_NAME))
-    arguments["project"] = str((PROJECT_ROOT / "runs" / "auto_label" / project).resolve())
+    arguments["project"] = str(
+        (PROJECT_ROOT / "runs" / "auto_label" / project).resolve()
+    )
     arguments["data"] = str(data_path)
     return arguments
 
@@ -106,7 +113,9 @@ def main() -> None:
     """训练自动打标模型。"""
     config = load_config(config_path())
     data_path, weights_path = validate_paths(config)
-    train_count, train_missing, val_count, val_missing = validate_dataset(data_path)
+    train_count, train_missing, val_count, val_missing = validate_dataset(
+        data_path
+    )
     arguments = training_arguments(config, data_path)
     if arguments.get("device", 0) != 0 or not torch.cuda.is_available():
         raise RuntimeError("本机自动打标小模型训练需要 CUDA device=0。")

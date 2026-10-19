@@ -43,7 +43,15 @@ def checkpoint_path(config: dict[str, Any]) -> Path:
     """返回由工程和实验确定的训练权重。"""
     project = str(config.get("project", PROJECT_NAME))
     experiment = str(config.get("experiment", "exp01"))
-    return PROJECT_ROOT / "runs" / "detect" / project / experiment / "weights" / "best.pt"
+    return (
+        PROJECT_ROOT
+        / "runs"
+        / "detect"
+        / project
+        / experiment
+        / "weights"
+        / "best.pt"
+    )
 
 
 def output_directory(config: dict[str, Any]) -> Path:
@@ -69,7 +77,9 @@ def validate_config(config: dict[str, Any]) -> tuple[Path, str]:
     return checkpoint, export_format
 
 
-def export_arguments(config: dict[str, Any], export_format: str) -> dict[str, Any]:
+def export_arguments(
+    config: dict[str, Any], export_format: str
+) -> dict[str, Any]:
     """根据配置构造 Ultralytics 导出参数。"""
     arguments = {
         "format": export_format,
@@ -115,7 +125,11 @@ def main() -> None:
     model = YOLO(str(checkpoint))
     exported = model.export(**arguments)
     source = artifact_path(exported, export_format)
-    target = output / ("export_standard.onnx" if export_format == "onnx" else "export_standard.engine")
+    target = output / (
+        "export_standard.onnx"
+        if export_format == "onnx"
+        else "export_standard.engine"
+    )
     shutil.copy2(source, target)
     print(f"[完成] 导出完成: {target}", flush=True)
 

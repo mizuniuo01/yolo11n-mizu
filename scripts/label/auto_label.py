@@ -48,7 +48,9 @@ def dataset_root(data_path: Path) -> Path:
     """根据小模型数据配置返回主数据集根目录。"""
     label_model_root = data_path.parent
     if label_model_root.name != "label_model":
-        raise ValueError(f"自动打标数据配置必须位于 label_model 目录: {data_path}")
+        raise ValueError(
+            f"自动打标数据配置必须位于 label_model 目录: {data_path}"
+        )
     return label_model_root.parent
 
 
@@ -56,7 +58,15 @@ def model_path(config: dict[str, Any]) -> Path:
     """定位训练好的自动打标模型权重。"""
     project = str(config.get("project", PROJECT_NAME))
     experiment = str(config.get("name", "train"))
-    return PROJECT_ROOT / "runs" / "auto_label" / project / experiment / "weights" / "best.pt"
+    return (
+        PROJECT_ROOT
+        / "runs"
+        / "auto_label"
+        / project
+        / experiment
+        / "weights"
+        / "best.pt"
+    )
 
 
 def write_labels(result: Any, label_path: Path) -> bool:
