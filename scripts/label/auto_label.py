@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 # 运行前修改本区域配置。
 PROJECT_NAME = "template"
+CONFIG_NAME = "train.yaml"
 CONFIDENCE_THRESHOLD = 0.5
 IOU_THRESHOLD = 0.45
 OVERWRITE_LABELS = False
@@ -24,7 +25,7 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 def config_path() -> Path:
     """返回自动打标训练配置路径。"""
-    return CONFIG_ROOT / PROJECT_NAME / "train.yaml"
+    return CONFIG_ROOT / PROJECT_NAME / CONFIG_NAME
 
 
 def load_config(path: Path) -> dict[str, Any]:
@@ -56,17 +57,17 @@ def dataset_root(data_path: Path) -> Path:
 
 def model_path(config: dict[str, Any]) -> Path:
     """定位训练好的自动打标模型权重。"""
-    project = str(config.get("project", PROJECT_NAME))
-    experiment = str(config.get("name", "train"))
-    return (
-        PROJECT_ROOT
-        / "runs"
-        / "auto_label"
-        / project
-        / experiment
-        / "weights"
-        / "best.pt"
+    project_directory = PROJECT_ROOT / "runs" / "auto_label" / PROJECT_NAME
+    experiments = sorted(
+        path
+        for path in project_directory.glob("exp[0-9][0-9]")
+        if (path / "weights" / "best.pt").is_file()
     )
+    if not experiments:
+        raise FileNotFoundError(
+            f"没有找到自动打标小模型权重: {project_directory}"
+        )
+    return experiments[-1] / "weights" / "best.pt"
 
 
 def write_labels(result: Any, label_path: Path) -> bool:

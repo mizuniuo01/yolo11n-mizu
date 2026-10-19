@@ -31,6 +31,16 @@
 9. GUIDE.md 以面向新手的程度进行编写。
 10. 基于Python语言的需严格遵循PEP-8规范进行编写。
 
+## 配置文件和实验目录约定
+
+- 工程由脚本顶部的 `PROJECT_NAME` 选择，配置文件由顶部的 `CONFIG_NAME` 选择。
+- 默认配置文件名保持为 `train.yaml`、`export.yaml` 和 `maixcam.yaml`。
+- 需要多套配置时，可以改用 `train01.yaml`、`export01.yaml` 等文件名，不需要复制脚本。
+- YAML 不保存 `project`、`name` 或 `experiment`，避免脚本入口与配置内容不一致。
+- 实验目录由脚本内部按 `exp01`、`exp02`、`exp03` 顺序自动生成，不使用 `exp01-2` 形式的名称。
+- 训练、标准导出和 MaixCAM 导出使用相同的实验名称，保持训练权重和导出产物一一对应。
+- 导出脚本从 `exp01` 开始顺序查找存在训练权重且尚未导出的实验。
+
 ## 阶段性日志
 
 ### 确定目录结构
@@ -137,11 +147,11 @@
 
 - 主模型训练使用 Ultralytics API，训练过程中自动使用 `val` 集验证。
 - YOLO11n 预训练权重提前下载并保存为 `weights/yolo11n.pt`；训练脚本只加载本地权重，缺失时直接提示错误。
-- 训练配置按工程分目录保存：`configs/train/<project_name>/train.yaml`。
+- 训练配置按工程分目录保存：`configs/train/<project_name>/train.yaml`，具体文件由脚本顶部的 `CONFIG_NAME` 选择。
 - 配置文件集中保存工程名、实验名、数据集配置路径、权重路径和训练参数。
 - `scripts/train/train.py` 通过顶部的 `PROJECT_NAME` 选择工程配置。
 - 配置中的相对路径统一相对于项目根目录解析，不依赖当前终端工作目录。
-- 训练结果使用配置中的 `project` 和 `name` 区分，目录形式为 `runs/detect/<project_name>/<experiment_name>/`。
+- 训练结果由脚本自动递增实验编号，目录形式为 `runs/detect/<project_name>/<experiment_name>/`。
 - 本阶段只实现主模型训练，不包含自动打标小模型训练。
 - 训练脚本使用类型提示、函数拆分、文档字符串和 PEP 8 风格。
 
@@ -183,7 +193,7 @@ python scripts/train/train.py
 本阶段设计：
 
 - 自动打标小模型使用少量人工准备的 `label_model/` 数据训练。
-- 小模型使用独立配置目录 `configs/auto_label/<project_name>/train.yaml` 和独立入口 `scripts/train/train_auto_label.py`。
+- 小模型使用独立配置目录 `configs/auto_label/<project_name>/train.yaml` 和独立入口 `scripts/train/train_auto_label.py`，具体文件由顶部的 `CONFIG_NAME` 选择。
 - 初始权重继续使用本地 `weights/yolo11n.pt`，不在训练脚本中自动联网下载。
 - 训练前检查 train/val 图片与同名标签的配对情况，并报告缺失标签。
 - 小模型采用独立的较小输入尺寸和训练参数，以便快速获得预标注模型。
@@ -208,8 +218,8 @@ python scripts/train/train.py
 
 本阶段设计：
 
-- 自动打标工具复用第七阶段的 `configs/auto_label/<project_name>/train.yaml`。
-- 根据配置中的 `project` 和 `name` 自动定位 `runs/auto_label/<project>/<experiment>/weights/best.pt`。
+- 自动打标工具复用第七阶段的 `configs/auto_label/<project_name>/train.yaml`，具体文件由顶部的 `CONFIG_NAME` 选择。
+- 按实验编号查找 `runs/auto_label/<project>/<experiment>/weights/best.pt`，使用最新可用的小模型。
 - 数据集根目录由配置中的 `label_model/data.yaml` 自动推导。
 - 输入为 `datasets/<dataset_name>/images/unlabeled/`，输出为对应的 `labels/unlabeled/`。
 - 置信度阈值、IoU 阈值和标签覆盖策略放在脚本顶部，便于频繁调整。
@@ -236,8 +246,8 @@ python scripts/train/train.py
 本阶段设计：
 
 - 通用导出支持 ONNX 和 TensorRT 两种格式，格式由配置选择。
-- 导出配置按工程保存于 `configs/export/<project>/export.yaml`。
-- 根据 `project` 和 `experiment` 自动定位主模型 `runs/detect/<project>/<experiment>/weights/best.pt`。
+- 导出配置按工程保存于 `configs/export/<project>/export.yaml`，具体文件由顶部的 `CONFIG_NAME` 选择。
+- 从 `exp01` 开始顺序定位主模型 `runs/detect/<project>/<experiment>/weights/best.pt`，跳过已有导出产物的实验。
 - 导出结果统一复制到 `runs/export/<project>/<experiment>/`。
 - 默认使用静态输入，`dynamic` 可在配置中开启。
 - TensorRT 默认使用 FP16，使用 `half` 字段切换；`amp` 只属于训练，不参与导出。
@@ -271,9 +281,9 @@ python scripts/train/train.py
 
 - 参考 YOLOv5 的工作流，但按 YOLO11 官方节点方案截断 Detect 头。
 - 使用当前 MaixCAM 官方 YOLO11 两输出方案，保留 DFL box 输出和 Sigmoid class 输出，不沿用 YOLOv5 的三输出约定。
-- MaixCAM 配置按工程保存于 `configs/export/<project>/maixcam.yaml`。
+- MaixCAM 配置按工程保存于 `configs/export/<project>/maixcam.yaml`，具体文件由顶部的 `CONFIG_NAME` 选择。
 - 输入尺寸使用与对应训练工程一致的 `[height, width]` 配置。
-- 根据工程和实验名定位 `runs/detect/<project>/<experiment>/weights/best.pt`。
+- 从 `exp01` 开始顺序定位 `runs/detect/<project>/<experiment>/weights/best.pt`，跳过已有 MaixCAM 导出产物的实验。
 - 标准导出和 MaixCAM 导出放在同一目录：`runs/export/<project>/<experiment>/`。
 - 标准 ONNX 命名为 `export_standard.onnx`，MaixCAM ONNX 命名为 `export_maixcam.onnx`。
 - 官方源节点和裁剪后输出名称由 `maixcam.yaml` 配置。

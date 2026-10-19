@@ -12,6 +12,10 @@ from ultralytics import YOLO
 
 # 选择 configs/auto_label/ 下的工程配置。
 PROJECT_NAME = "template"
+CONFIG_NAME = "train.yaml"
+EXPERIMENT_PREFIX = "exp"
+EXPERIMENT_DIGITS = 2
+START_EXPERIMENT_NUMBER = 1
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_ROOT = PROJECT_ROOT / "configs" / "auto_label"
@@ -20,7 +24,7 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 def config_path() -> Path:
     """返回选定工程的自动打标配置。"""
-    return CONFIG_ROOT / PROJECT_NAME / "train.yaml"
+    return CONFIG_ROOT / PROJECT_NAME / CONFIG_NAME
 
 
 def load_config(path: Path) -> dict[str, Any]:
@@ -102,7 +106,7 @@ def training_arguments(
     """构造 Ultralytics 参数和绝对输出路径。"""
     arguments = dict(config)
     arguments.pop("weights", None)
-    project = str(arguments.get("project", PROJECT_NAME))
+    project = PROJECT_NAME
     arguments["project"] = str(
         (PROJECT_ROOT / "runs" / "auto_label" / project).resolve()
     )
@@ -127,8 +131,8 @@ def next_experiment_name(project_directory: Path, configured_name: str) -> str:
         )
 
     prefix, number = match.groups()
-    width = len(number)
-    current = int(number)
+    width = EXPERIMENT_DIGITS
+    current = max(int(number), START_EXPERIMENT_NUMBER)
     while (project_directory / f"{prefix}{current:0{width}d}").exists():
         current += 1
     return f"{prefix}{current:0{width}d}"
@@ -145,7 +149,7 @@ def main() -> None:
     if arguments.get("device", 0) != 0 or not torch.cuda.is_available():
         raise RuntimeError("本机自动打标小模型训练需要 CUDA device=0。")
 
-    project = config.get("project", PROJECT_NAME)
+    project = PROJECT_NAME
     experiment = arguments.get("name", "exp01")
     print("[准备] 自动打标小模型训练配置", flush=True)
     print(f"工程: {PROJECT_NAME}", flush=True)

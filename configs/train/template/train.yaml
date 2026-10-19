@@ -1,7 +1,4 @@
 # YOLO11 主模型训练配置。
-project: template
-name: exp01
-
 data: datasets/template/data.yaml
 weights: weights/yolo11n.pt
 

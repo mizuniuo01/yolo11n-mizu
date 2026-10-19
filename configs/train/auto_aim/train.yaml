@@ -1,7 +1,4 @@
 # YOLO11 主模型训练配置。
-project: auto_aim
-name: exp01
-
 data: datasets/auto_aim/data.yaml
 weights: weights/yolo11n.pt
 

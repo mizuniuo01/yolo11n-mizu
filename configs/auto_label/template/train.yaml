@@ -1,7 +1,4 @@
 # 自动打标小模型训练配置。
-project: template
-name: exp01
-
 data: datasets/template/label_model/data.yaml
 weights: weights/yolo11n.pt
 

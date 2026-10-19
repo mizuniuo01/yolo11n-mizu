@@ -12,6 +12,10 @@ from ultralytics import YOLO
 
 # 选择 configs/export/ 下的工程配置。
 PROJECT_NAME = "template"
+CONFIG_NAME = "maixcam.yaml"
+EXPERIMENT_PREFIX = "exp"
+EXPERIMENT_DIGITS = 2
+START_EXPERIMENT_NUMBER = 1
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_ROOT = PROJECT_ROOT / "configs" / "export"
@@ -19,7 +23,7 @@ CONFIG_ROOT = PROJECT_ROOT / "configs" / "export"
 
 def config_path() -> Path:
     """返回选定工程的 MaixCAM 配置路径。"""
-    return CONFIG_ROOT / PROJECT_NAME / "maixcam.yaml"
+    return CONFIG_ROOT / PROJECT_NAME / CONFIG_NAME
 
 
 def load_config(path: Path) -> dict[str, Any]:
@@ -35,20 +39,15 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def select_experiment(config: dict[str, Any]) -> tuple[Path, str]:
     """按顺序选择尚未导出的训练实验。"""
-    project = str(config.get("project", PROJECT_NAME))
-    start_name = str(config.get("experiment", "exp01"))
+    project = PROJECT_NAME
     train_directory = PROJECT_ROOT / "runs" / "detect" / project
     export_directory = PROJECT_ROOT / "runs" / "export" / project
-    for number in range(1, 1000):
-        experiment = f"exp{number:02d}"
-        if number == 1 and start_name != "exp01":
-            experiment = start_name
+    for number in range(START_EXPERIMENT_NUMBER, 1000):
+        experiment = f"{EXPERIMENT_PREFIX}{number:0{EXPERIMENT_DIGITS}d}"
         checkpoint = train_directory / experiment / "weights" / "best.pt"
         artifact = export_directory / experiment / "export_maixcam.onnx"
         if checkpoint.is_file() and not artifact.exists():
             return checkpoint, experiment
-        if start_name != "exp01":
-            break
     raise FileNotFoundError(
         f"没有找到待导出的训练实验: {train_directory}"
     )
@@ -56,7 +55,7 @@ def select_experiment(config: dict[str, Any]) -> tuple[Path, str]:
 
 def output_path(config: dict[str, Any], experiment: str) -> Path:
     """返回截断后的 MaixCAM ONNX 路径。"""
-    project = str(config.get("project", PROJECT_NAME))
+    project = PROJECT_NAME
     project_directory = PROJECT_ROOT / "runs" / "export" / project
     directory = project_directory / experiment
     directory.mkdir(parents=True, exist_ok=True)

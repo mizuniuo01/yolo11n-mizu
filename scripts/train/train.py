@@ -12,6 +12,10 @@ from ultralytics import YOLO
 
 # 选择 configs/train/ 下的工程配置。
 PROJECT_NAME = "template"
+CONFIG_NAME = "train.yaml"
+EXPERIMENT_PREFIX = "exp"
+EXPERIMENT_DIGITS = 2
+START_EXPERIMENT_NUMBER = 1
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_ROOT = PROJECT_ROOT / "configs" / "train"
@@ -19,7 +23,7 @@ CONFIG_ROOT = PROJECT_ROOT / "configs" / "train"
 
 def config_path() -> Path:
     """返回选定工程的训练配置路径。"""
-    return CONFIG_ROOT / PROJECT_NAME / "train.yaml"
+    return CONFIG_ROOT / PROJECT_NAME / CONFIG_NAME
 
 
 def load_config(path: Path) -> dict[str, Any]:
@@ -64,7 +68,7 @@ def training_arguments(
     arguments = dict(config)
     arguments.pop("weights", None)
     arguments["data"] = str(data_path)
-    project_name = str(arguments.get("project", PROJECT_NAME))
+    project_name = PROJECT_NAME
     arguments["project"] = str(
         (PROJECT_ROOT / "runs" / "detect" / project_name).resolve()
     )
@@ -88,8 +92,8 @@ def next_experiment_name(project_directory: Path, configured_name: str) -> str:
         )
 
     prefix, number = match.groups()
-    width = len(number)
-    current = int(number)
+    width = EXPERIMENT_DIGITS
+    current = max(int(number), START_EXPERIMENT_NUMBER)
     while (project_directory / f"{prefix}{current:0{width}d}").exists():
         current += 1
     return f"{prefix}{current:0{width}d}"
@@ -133,7 +137,7 @@ def main() -> None:
     validate_device(arguments)
 
     project = arguments.get("project", PROJECT_NAME)
-    experiment = arguments.get("name", "train")
+    experiment = arguments.get("name", f"{EXPERIMENT_PREFIX}01")
     print_training_info(data_path, weights_path, project, experiment)
 
     print("[处理] 开始训练，以下为 Ultralytics 实时进度", flush=True)

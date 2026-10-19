@@ -1,7 +1,4 @@
 # 通用导出配置。
-project: template
-experiment: exp01
-
 format: onnx
 imgsz: [320, 320]
 dynamic: false

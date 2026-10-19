@@ -27,7 +27,7 @@ finish() {
 
 trap finish EXIT
 
-net_name="auto_aim"
+net_name="template"
 model_def="export_maixcam.onnx"
 input_w=320
 input_h=224

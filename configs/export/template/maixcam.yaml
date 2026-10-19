@@ -1,7 +1,4 @@
 # MaixCAM 专用 YOLO11 导出配置。
-project: template
-experiment: exp01
-
 imgsz: [224, 320]
 opset: 17
 dynamic: false
