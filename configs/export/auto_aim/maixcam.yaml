@@ -1,4 +1,4 @@
-# MaixCAM-specific YOLO11 export configuration.
+# MaixCAM 专用 YOLO11 导出配置。
 project: auto_aim
 experiment: exp01
 
@@ -8,12 +8,12 @@ dynamic: false
 simplify: true
 input_name: images
 
-# Official YOLO11 Detect outputs used before TPU-MLIR conversion.
+# TPU-MLIR 转换前使用的官方 YOLO11 Detect 输出节点。
 source_output_names:
   - /model.23/dfl/conv/Conv_output_0
   - /model.23/Sigmoid_output_0
 
-# Local names consumed by the TPU-MLIR shell script.
+# TPU-MLIR shell 脚本使用的本地输出名称。
 output_names:
   - out_box
   - out_cls

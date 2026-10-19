@@ -1,4 +1,4 @@
-# Training configuration for the automatic-labeling model.
+# 自动打标小模型训练配置。
 project: template
 name: exp01
 

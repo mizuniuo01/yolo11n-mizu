@@ -1,13 +1,13 @@
-# Dataset template
+# 数据集模板
 
-Use this layout for each dataset:
+每个数据集使用以下目录结构：
 
-- `data.yaml`: main YOLO11 training configuration
-- `images/train/` and `labels/train/`: main training samples
-- `images/val/` and `labels/val/`: main validation samples
-- `images/unlabeled/`: images waiting for automatic labeling
-- `labels/unlabeled/`: generated and manually corrected labels
-- `label_model/`: the small manually labeled dataset used to train the auto-label model
-- `label_model/data.yaml`: independent configuration for the auto-label model
+- `data.yaml`：YOLO11 主模型训练配置
+- `images/train/` 和 `labels/train/`：主模型训练样本
+- `images/val/` 和 `labels/val/`：主模型验证样本
+- `images/unlabeled/`：等待自动打标的图片
+- `labels/unlabeled/`：自动生成并人工修正后的标签
+- `label_model/`：用于训练自动打标模型的少量人工标注数据
+- `label_model/data.yaml`：自动打标模型的独立配置
 
-Image files and label files use the same relative path and filename stem. YOLO label files contain normalized `class_id center_x center_y width height` values. Class IDs start at `0` and match the order in `names`.
+图片和标签文件使用相同的相对路径和文件名主干。YOLO 标签文件包含归一化的 `class_id center_x center_y width height` 值。类别 ID 从 `0` 开始，并与 `names` 中的顺序一致。

@@ -1,4 +1,4 @@
-# Main YOLO11 training configuration.
+# YOLO11 主模型训练配置。
 project: auto_aim
 name: exp01
 
