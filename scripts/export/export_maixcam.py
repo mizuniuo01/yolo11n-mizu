@@ -33,26 +33,32 @@ def load_config(path: Path) -> dict[str, Any]:
     return config
 
 
-def checkpoint_path(config: dict[str, Any]) -> Path:
-    """返回由工程和实验确定的训练权重。"""
+def select_experiment(config: dict[str, Any]) -> tuple[Path, str]:
+    """按顺序选择尚未导出的训练实验。"""
     project = str(config.get("project", PROJECT_NAME))
-    experiment = str(config.get("experiment", "exp01"))
-    return (
-        PROJECT_ROOT
-        / "runs"
-        / "detect"
-        / project
-        / experiment
-        / "weights"
-        / "best.pt"
+    start_name = str(config.get("experiment", "exp01"))
+    train_directory = PROJECT_ROOT / "runs" / "detect" / project
+    export_directory = PROJECT_ROOT / "runs" / "export" / project
+    for number in range(1, 1000):
+        experiment = f"exp{number:02d}"
+        if number == 1 and start_name != "exp01":
+            experiment = start_name
+        checkpoint = train_directory / experiment / "weights" / "best.pt"
+        artifact = export_directory / experiment / "export_maixcam.onnx"
+        if checkpoint.is_file() and not artifact.exists():
+            return checkpoint, experiment
+        if start_name != "exp01":
+            break
+    raise FileNotFoundError(
+        f"没有找到待导出的训练实验: {train_directory}"
     )
 
 
-def output_path(config: dict[str, Any]) -> Path:
+def output_path(config: dict[str, Any], experiment: str) -> Path:
     """返回截断后的 MaixCAM ONNX 路径。"""
     project = str(config.get("project", PROJECT_NAME))
-    experiment = str(config.get("experiment", "exp01"))
-    directory = PROJECT_ROOT / "runs" / "export" / project / experiment
+    project_directory = PROJECT_ROOT / "runs" / "export" / project
+    directory = project_directory / experiment
     directory.mkdir(parents=True, exist_ok=True)
     return directory / "export_maixcam.onnx"
 
@@ -108,9 +114,7 @@ def truncate_outputs(
 def main() -> None:
     """导出并截断配置的 YOLO11 权重。"""
     config = load_config(config_path())
-    checkpoint = checkpoint_path(config)
-    if not checkpoint.is_file():
-        raise FileNotFoundError(f"训练权重不存在: {checkpoint}")
+    checkpoint, experiment = select_experiment(config)
 
     imgsz = config.get("imgsz", [224, 320])
     if not isinstance(imgsz, list) or len(imgsz) != 2:
@@ -118,7 +122,7 @@ def main() -> None:
     if any(int(size) <= 0 or int(size) % 32 != 0 for size in imgsz):
         raise ValueError("imgsz 的 height 和 width 必须是 32 的倍数")
 
-    target = output_path(config)
+    target = output_path(config, experiment)
     source_outputs = config.get("source_output_names")
     output_names = config.get("output_names")
     input_name = str(config.get("input_name", "images"))

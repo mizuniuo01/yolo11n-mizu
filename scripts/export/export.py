@@ -39,41 +39,49 @@ def resolve_path(value: str | Path) -> Path:
     return path if path.is_absolute() else (PROJECT_ROOT / path).resolve()
 
 
-def checkpoint_path(config: dict[str, Any]) -> Path:
-    """返回由工程和实验确定的训练权重。"""
+def select_experiment(
+    config: dict[str, Any], export_format: str
+) -> tuple[Path, str]:
+    """按顺序选择尚未导出的训练实验。"""
     project = str(config.get("project", PROJECT_NAME))
-    experiment = str(config.get("experiment", "exp01"))
-    return (
-        PROJECT_ROOT
-        / "runs"
-        / "detect"
-        / project
-        / experiment
-        / "weights"
-        / "best.pt"
+    start_name = str(config.get("experiment", "exp01"))
+    train_directory = PROJECT_ROOT / "runs" / "detect" / project
+    export_directory = PROJECT_ROOT / "runs" / "export" / project
+    suffix = ".onnx" if export_format == "onnx" else ".engine"
+    artifact_name = f"export_standard{suffix}"
+
+    for number in range(1, 1000):
+        experiment = f"exp{number:02d}"
+        if number == 1 and start_name != "exp01":
+            experiment = start_name
+        checkpoint = train_directory / experiment / "weights" / "best.pt"
+        artifact = export_directory / experiment / artifact_name
+        if checkpoint.is_file() and not artifact.exists():
+            return checkpoint, experiment
+        if start_name != "exp01":
+            break
+    raise FileNotFoundError(
+        f"没有找到待导出的训练实验: {train_directory}"
     )
 
 
-def output_directory(config: dict[str, Any]) -> Path:
+def output_directory(config: dict[str, Any], experiment: str) -> Path:
     """返回并创建通用导出目录。"""
     project = str(config.get("project", PROJECT_NAME))
-    experiment = str(config.get("experiment", "exp01"))
-    directory = PROJECT_ROOT / "runs" / "export" / project / experiment
+    project_directory = PROJECT_ROOT / "runs" / "export" / project
+    directory = project_directory / experiment
     directory.mkdir(parents=True, exist_ok=True)
     return directory
 
 
 def validate_config(config: dict[str, Any]) -> tuple[Path, str]:
     """检查导出格式、训练权重和 CUDA 要求。"""
-    checkpoint = checkpoint_path(config)
-    if not checkpoint.is_file():
-        raise FileNotFoundError(f"训练权重不存在: {checkpoint}")
-
     export_format = str(config.get("format", "onnx")).lower()
     if export_format not in {"onnx", "engine"}:
         raise ValueError("format 只能是 'onnx' 或 'engine'")
     if not torch.cuda.is_available():
         raise RuntimeError("本机通用导出需要 CUDA device=0。")
+    checkpoint, _ = select_experiment(config, export_format)
     return checkpoint, export_format
 
 
@@ -112,8 +120,9 @@ def main() -> None:
     """导出选定模型并将产物复制到 runs/export。"""
     config = load_config(config_path())
     checkpoint, export_format = validate_config(config)
+    _, experiment = select_experiment(config, export_format)
     arguments = export_arguments(config, export_format)
-    output = output_directory(config)
+    output = output_directory(config, experiment)
 
     print("[准备] 通用模型导出配置", flush=True)
     print(f"输入权重: {checkpoint}", flush=True)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -106,7 +107,31 @@ def training_arguments(
         (PROJECT_ROOT / "runs" / "auto_label" / project).resolve()
     )
     arguments["data"] = str(data_path)
+    project_directory = Path(arguments["project"])
+    configured_name = str(arguments.get("name", "exp01"))
+    arguments["name"] = next_experiment_name(
+        project_directory, configured_name
+    )
     return arguments
+
+
+def next_experiment_name(project_directory: Path, configured_name: str) -> str:
+    """返回下一个可用的数字递增实验名称。"""
+    match = re.fullmatch(r"(.*?)(\d+)", configured_name)
+    if match is None:
+        if not (project_directory / configured_name).exists():
+            return configured_name
+        raise FileExistsError(
+            f"实验目录已存在且无法自动递增: "
+            f"{project_directory / configured_name}"
+        )
+
+    prefix, number = match.groups()
+    width = len(number)
+    current = int(number)
+    while (project_directory / f"{prefix}{current:0{width}d}").exists():
+        current += 1
+    return f"{prefix}{current:0{width}d}"
 
 
 def main() -> None:
@@ -121,7 +146,7 @@ def main() -> None:
         raise RuntimeError("本机自动打标小模型训练需要 CUDA device=0。")
 
     project = config.get("project", PROJECT_NAME)
-    experiment = config.get("name", "train")
+    experiment = arguments.get("name", "exp01")
     print("[准备] 自动打标小模型训练配置", flush=True)
     print(f"工程: {PROJECT_NAME}", flush=True)
     print(f"数据配置: {data_path}", flush=True)

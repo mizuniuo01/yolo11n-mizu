@@ -1,4 +1,4 @@
-# Configuration for the small model used for automatic labeling.
+# 用于自动打标的小模型配置。
 path: ./datasets/template/label_model
 train: images/train
 val: images/val

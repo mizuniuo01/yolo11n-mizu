@@ -1,4 +1,4 @@
-# Replace this template with the dataset-specific configuration.
+# 请根据当前数据集修改此模板配置。
 path: ./datasets/template
 train: images/train
 val: images/val

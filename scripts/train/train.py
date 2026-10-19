@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -67,7 +68,31 @@ def training_arguments(
     arguments["project"] = str(
         (PROJECT_ROOT / "runs" / "detect" / project_name).resolve()
     )
+    project_directory = Path(arguments["project"])
+    configured_name = str(arguments.get("name", "exp01"))
+    arguments["name"] = next_experiment_name(
+        project_directory, configured_name
+    )
     return arguments
+
+
+def next_experiment_name(project_directory: Path, configured_name: str) -> str:
+    """返回下一个可用的数字递增实验名称。"""
+    match = re.fullmatch(r"(.*?)(\d+)", configured_name)
+    if match is None:
+        if not (project_directory / configured_name).exists():
+            return configured_name
+        raise FileExistsError(
+            f"实验目录已存在且无法自动递增: "
+            f"{project_directory / configured_name}"
+        )
+
+    prefix, number = match.groups()
+    width = len(number)
+    current = int(number)
+    while (project_directory / f"{prefix}{current:0{width}d}").exists():
+        current += 1
+    return f"{prefix}{current:0{width}d}"
 
 
 def validate_device(arguments: dict[str, Any]) -> None:

@@ -33,6 +33,10 @@ def find_samples(dataset: Path) -> tuple[list[Sample], int]:
     """在未标注目录中查找图片和标签配对。"""
     image_directory = dataset / "images" / "unlabeled"
     label_directory = dataset / "labels" / "unlabeled"
+    if not image_directory.is_dir():
+        raise FileNotFoundError(f"未标注图片目录不存在: {image_directory}")
+    if not label_directory.is_dir():
+        raise FileNotFoundError(f"未标注标签目录不存在: {label_directory}")
     missing_labels = 0
     samples = []
 

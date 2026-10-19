@@ -6,10 +6,10 @@ data: datasets/auto_aim/data.yaml
 weights: weights/yolo11n.pt
 
 epochs: 150
-patience: 30
+patience: 50
 imgsz: 320
 batch: -1
 device: 0
-workers: 4
+workers: 6
 cache: 'ram'
 amp: true

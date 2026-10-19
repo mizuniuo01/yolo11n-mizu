@@ -12,8 +12,9 @@ import yaml
 # 运行前修改本区域配置。
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATASET_NAME = "template"
-LABEL_TARGET = "unlabeled"  # "unlabeled" or "label_model"
-LABEL_MODEL_SPLIT = "train"  # Used when LABEL_TARGET is "label_model".
+LABEL_TARGET = "unlabeled"  # 可选：unlabeled、label_model、main_model
+LABEL_MODEL_SPLIT = "train"  # LABEL_TARGET 为 label_model 时使用。
+MAIN_MODEL_SPLIT = "train"  # LABEL_TARGET 为 main_model 时使用。
 LABELIMG_COMMAND = PROJECT_ROOT / ".venv" / "Scripts" / "labelImg.exe"
 
 
@@ -29,7 +30,11 @@ def configuration_path() -> Path:
         return root / "data.yaml"
     if LABEL_TARGET == "label_model":
         return root / "label_model" / "data.yaml"
-    raise ValueError("LABEL_TARGET 必须是 'unlabeled' 或 'label_model'")
+    if LABEL_TARGET == "main_model":
+        return root / "data.yaml"
+    raise ValueError(
+        "LABEL_TARGET 必须是 'unlabeled'、'label_model' 或 'main_model'"
+    )
 
 
 def annotation_directories() -> tuple[Path, Path]:
@@ -37,12 +42,23 @@ def annotation_directories() -> tuple[Path, Path]:
     root = dataset_root()
     if LABEL_TARGET == "unlabeled":
         return root / "images" / "unlabeled", root / "labels" / "unlabeled"
-    if LABEL_MODEL_SPLIT not in {"train", "val"}:
-        raise ValueError("LABEL_MODEL_SPLIT 必须是 'train' 或 'val'")
-    label_model = root / "label_model"
-    return (
-        label_model / "images" / LABEL_MODEL_SPLIT,
-        label_model / "labels" / LABEL_MODEL_SPLIT,
+    if LABEL_TARGET == "label_model":
+        if LABEL_MODEL_SPLIT not in {"train", "val"}:
+            raise ValueError("LABEL_MODEL_SPLIT 必须是 'train' 或 'val'")
+        label_model = root / "label_model"
+        return (
+            label_model / "images" / LABEL_MODEL_SPLIT,
+            label_model / "labels" / LABEL_MODEL_SPLIT,
+        )
+    if LABEL_TARGET == "main_model":
+        if MAIN_MODEL_SPLIT not in {"train", "val"}:
+            raise ValueError("MAIN_MODEL_SPLIT 必须是 'train' 或 'val'")
+        return (
+            root / "images" / MAIN_MODEL_SPLIT,
+            root / "labels" / MAIN_MODEL_SPLIT,
+        )
+    raise ValueError(
+        "LABEL_TARGET 必须是 'unlabeled'、'label_model' 或 'main_model'"
     )
 
 
@@ -61,9 +77,9 @@ def load_class_names(path: Path) -> list[str]:
     raise ValueError(f"配置中缺少有效的 names 字段: {path}")
 
 
-def write_class_file(names: list[str]) -> Path:
-    """写入临时 LabelImg 类别文件并返回路径。"""
-    class_file = PROJECT_ROOT / ".labelimg-classes.txt"
+def write_class_file(names: list[str], label_dir: Path) -> Path:
+    """在标签目录写入 LabelImg 所需的类别文件。"""
+    class_file = label_dir / "classes.txt"
     class_file.write_text("\n".join(names) + "\n", encoding="utf-8")
     return class_file
 
@@ -138,7 +154,7 @@ def main() -> None:
     validate_paths(image_dir, label_dir, data_file)
     patch_labelimg_compatibility()
     names = load_class_names(data_file)
-    class_file = write_class_file(names)
+    class_file = write_class_file(names, label_dir)
 
     command = [
         str(LABELIMG_COMMAND),
