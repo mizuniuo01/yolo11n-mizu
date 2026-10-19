@@ -1,4 +1,4 @@
-"""Export a trained YOLO11 model to ONNX or TensorRT."""
+"""将训练好的 YOLO11 模型导出为 ONNX 或 TensorRT。"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import torch
 import yaml
 from ultralytics import YOLO
 
-# Edit this value to select a project under configs/export/.
+# 选择 configs/export/ 下的工程配置。
 PROJECT_NAME = "template"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -18,12 +18,12 @@ CONFIG_ROOT = PROJECT_ROOT / "configs" / "export"
 
 
 def config_path() -> Path:
-    """Return the selected project's export configuration path."""
+    """返回选定工程的导出配置路径。"""
     return CONFIG_ROOT / PROJECT_NAME / "export.yaml"
 
 
 def load_config(path: Path) -> dict[str, Any]:
-    """Load and validate an export YAML configuration."""
+    """加载并检查导出 YAML 配置。"""
     if not path.is_file():
         raise FileNotFoundError(f"导出配置不存在: {path}")
     with path.open(encoding="utf-8") as stream:
@@ -34,20 +34,20 @@ def load_config(path: Path) -> dict[str, Any]:
 
 
 def resolve_path(value: str | Path) -> Path:
-    """Resolve a project-relative path against the repository root."""
+    """将工程相对路径解析为仓库根目录下的路径。"""
     path = Path(value)
     return path if path.is_absolute() else (PROJECT_ROOT / path).resolve()
 
 
 def checkpoint_path(config: dict[str, Any]) -> Path:
-    """Return the trained checkpoint selected by project and experiment."""
+    """返回由工程和实验确定的训练权重。"""
     project = str(config.get("project", PROJECT_NAME))
     experiment = str(config.get("experiment", "exp01"))
     return PROJECT_ROOT / "runs" / "detect" / project / experiment / "weights" / "best.pt"
 
 
 def output_directory(config: dict[str, Any]) -> Path:
-    """Return and create the generic export output directory."""
+    """返回并创建通用导出目录。"""
     project = str(config.get("project", PROJECT_NAME))
     experiment = str(config.get("experiment", "exp01"))
     directory = PROJECT_ROOT / "runs" / "export" / project / experiment
@@ -56,7 +56,7 @@ def output_directory(config: dict[str, Any]) -> Path:
 
 
 def validate_config(config: dict[str, Any]) -> tuple[Path, str]:
-    """Validate format, checkpoint and CUDA requirements."""
+    """检查导出格式、训练权重和 CUDA 要求。"""
     checkpoint = checkpoint_path(config)
     if not checkpoint.is_file():
         raise FileNotFoundError(f"训练权重不存在: {checkpoint}")
@@ -70,7 +70,7 @@ def validate_config(config: dict[str, Any]) -> tuple[Path, str]:
 
 
 def export_arguments(config: dict[str, Any], export_format: str) -> dict[str, Any]:
-    """Build Ultralytics export arguments from the configuration."""
+    """根据配置构造 Ultralytics 导出参数。"""
     arguments = {
         "format": export_format,
         "imgsz": config.get("imgsz", [640, 640]),
@@ -87,7 +87,7 @@ def export_arguments(config: dict[str, Any], export_format: str) -> dict[str, An
 
 
 def artifact_path(exported: str | Path, export_format: str) -> Path:
-    """Resolve the artifact path returned by Ultralytics."""
+    """解析 Ultralytics 返回的导出产物路径。"""
     path = Path(exported)
     if path.is_file():
         return path
@@ -99,23 +99,25 @@ def artifact_path(exported: str | Path, export_format: str) -> Path:
 
 
 def main() -> None:
-    """Export the selected trained model and copy the artifact to runs/export."""
+    """导出选定模型并将产物复制到 runs/export。"""
     config = load_config(config_path())
     checkpoint, export_format = validate_config(config)
     arguments = export_arguments(config, export_format)
     output = output_directory(config)
 
+    print("[准备] 通用模型导出配置", flush=True)
     print(f"输入权重: {checkpoint}", flush=True)
     print(f"导出格式: {export_format}", flush=True)
     print(f"导出参数: {arguments}", flush=True)
     print(f"输出目录: {output}", flush=True)
 
+    print("[处理] 开始导出模型", flush=True)
     model = YOLO(str(checkpoint))
     exported = model.export(**arguments)
     source = artifact_path(exported, export_format)
     target = output / ("export_standard.onnx" if export_format == "onnx" else "export_standard.engine")
     shutil.copy2(source, target)
-    print(f"导出完成: {target}", flush=True)
+    print(f"[完成] 导出完成: {target}", flush=True)
 
 
 if __name__ == "__main__":

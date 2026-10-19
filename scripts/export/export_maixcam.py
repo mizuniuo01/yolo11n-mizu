@@ -1,4 +1,4 @@
-"""Export and truncate a YOLO11 ONNX model for MaixCAM."""
+"""导出并截断适用于 MaixCAM 的 YOLO11 ONNX 模型。"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import torch
 import yaml
 from ultralytics import YOLO
 
-# Edit this value to select a project under configs/export/.
+# 选择 configs/export/ 下的工程配置。
 PROJECT_NAME = "template"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -18,12 +18,12 @@ CONFIG_ROOT = PROJECT_ROOT / "configs" / "export"
 
 
 def config_path() -> Path:
-    """Return the selected MaixCAM configuration path."""
+    """返回选定工程的 MaixCAM 配置路径。"""
     return CONFIG_ROOT / PROJECT_NAME / "maixcam.yaml"
 
 
 def load_config(path: Path) -> dict[str, Any]:
-    """Load and validate a MaixCAM export configuration."""
+    """加载并检查 MaixCAM 导出配置。"""
     if not path.is_file():
         raise FileNotFoundError(f"MaixCAM 配置不存在: {path}")
     with path.open(encoding="utf-8") as stream:
@@ -34,14 +34,14 @@ def load_config(path: Path) -> dict[str, Any]:
 
 
 def checkpoint_path(config: dict[str, Any]) -> Path:
-    """Return the trained checkpoint selected by project and experiment."""
+    """返回由工程和实验确定的训练权重。"""
     project = str(config.get("project", PROJECT_NAME))
     experiment = str(config.get("experiment", "exp01"))
     return PROJECT_ROOT / "runs" / "detect" / project / experiment / "weights" / "best.pt"
 
 
 def output_path(config: dict[str, Any]) -> Path:
-    """Return the truncated MaixCAM ONNX path."""
+    """返回截断后的 MaixCAM ONNX 路径。"""
     project = str(config.get("project", PROJECT_NAME))
     experiment = str(config.get("experiment", "exp01"))
     directory = PROJECT_ROOT / "runs" / "export" / project / experiment
@@ -56,7 +56,7 @@ def truncate_outputs(
     source_outputs: list[str],
     output_names: list[str],
 ) -> None:
-    """Extract the official YOLO11 Detect outputs and rename them."""
+    """提取官方 YOLO11 Detect 输出并重命名。"""
     if len(source_outputs) != 2 or len(output_names) != 2:
         raise ValueError("YOLO11 MaixCAM 必须配置两个输入输出节点")
 
@@ -101,7 +101,7 @@ def truncate_outputs(
 
 
 def main() -> None:
-    """Export and truncate the configured YOLO11 checkpoint."""
+    """导出并截断配置的 YOLO11 权重。"""
     config = load_config(config_path())
     checkpoint = checkpoint_path(config)
     if not checkpoint.is_file():
@@ -131,9 +131,11 @@ def main() -> None:
     if not torch.cuda.is_available():
         raise RuntimeError("本机 MaixCAM 导出需要 CUDA device=0。")
 
+    print("[准备] MaixCAM 模型导出配置", flush=True)
     print(f"输入权重: {checkpoint}", flush=True)
     print(f"导出参数: {export_args}", flush=True)
     print(f"输出文件: {target}", flush=True)
+    print("[处理] 导出标准 ONNX 并截断 YOLO11 Detect 头", flush=True)
     exported = YOLO(str(checkpoint)).export(**export_args)
     source = Path(exported)
     if not source.is_file():
@@ -145,7 +147,7 @@ def main() -> None:
         source_outputs,
         output_names,
     )
-    print(f"导出完成: {target}", flush=True)
+    print(f"[完成] 导出完成: {target}", flush=True)
 
 
 if __name__ == "__main__":

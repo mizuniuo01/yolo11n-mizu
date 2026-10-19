@@ -1,4 +1,4 @@
-"""Extract uniformly sampled frames from project videos."""
+"""从项目视频中按固定频率抽取图片。"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Iterator
 import cv2
 from tqdm import tqdm
 
-# Edit this section before running the script.
+# 运行前修改本区域配置。
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATASET_NAME = "template"
 FRAMES_PER_SECOND = 9.0
@@ -19,17 +19,17 @@ SUPPORTED_VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv"}
 
 
 def video_directory() -> Path:
-    """Return the configured dataset video directory."""
+    """返回配置的数据集视频目录。"""
     return PROJECT_ROOT / "datasets" / DATASET_NAME / "videos"
 
 
 def output_directory() -> Path:
-    """Return the dataset's unlabeled image directory."""
+    """返回数据集的未标注图片目录。"""
     return PROJECT_ROOT / "datasets" / DATASET_NAME / "images" / "unlabeled"
 
 
 def iter_videos(directory: Path) -> Iterator[Path]:
-    """Yield supported videos in deterministic order."""
+    """按固定顺序返回支持的视频文件。"""
     yield from sorted(
         path
         for path in directory.iterdir()
@@ -38,7 +38,7 @@ def iter_videos(directory: Path) -> Iterator[Path]:
 
 
 def inspect_video(video_path: Path) -> tuple[float, int, int]:
-    """Return FPS, frame count, and estimated extracted image count."""
+    """返回帧率、总帧数和预计抽取数量。"""
     capture = cv2.VideoCapture(str(video_path))
     if not capture.isOpened():
         raise RuntimeError(f"无法打开视频: {video_path}")
@@ -53,7 +53,7 @@ def inspect_video(video_path: Path) -> tuple[float, int, int]:
 
 
 def show_estimate(videos: list[Path]) -> None:
-    """Print per-video and total frame extraction estimates."""
+    """打印每个视频和全部视频的抽帧预估。"""
     total_estimated = 0
     print("\n抽帧预估:")
     for video_path in videos:
@@ -72,7 +72,7 @@ def show_estimate(videos: list[Path]) -> None:
 
 
 def confirm_extraction() -> None:
-    """Ask whether extraction should start."""
+    """询问是否开始抽帧。"""
     if not SHOW_CONFIRMATION_PROMPT:
         return
     answer = input("是否开始抽帧？(Y/n): ").strip().lower()
@@ -82,7 +82,7 @@ def confirm_extraction() -> None:
 
 
 def extract_video(video_path: Path, output_path: Path, next_index: int) -> int:
-    """Extract frames from one video and return the next available index."""
+    """抽取一个视频的图片并返回下一个可用编号。"""
     capture = cv2.VideoCapture(str(video_path))
     if not capture.isOpened():
         print(f"无法打开视频，跳过: {video_path}")
@@ -123,7 +123,7 @@ def extract_video(video_path: Path, output_path: Path, next_index: int) -> int:
 
 
 def main() -> None:
-    """Extract frames from all videos in the configured project directory."""
+    """处理配置目录中的全部视频。"""
     if FRAMES_PER_SECOND <= 0:
         raise ValueError("FRAMES_PER_SECOND 必须大于 0")
 

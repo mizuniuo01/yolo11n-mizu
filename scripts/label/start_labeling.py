@@ -1,4 +1,4 @@
-"""Start LabelImg for manual YOLO annotation."""
+"""启动 LabelImg 进行人工 YOLO 标注。"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import Any
 
 import yaml
 
-# Edit this section before running the script.
+# 运行前修改本区域配置。
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATASET_NAME = "template"
 LABEL_TARGET = "unlabeled"  # "unlabeled" or "label_model"
@@ -19,12 +19,12 @@ LABELIMG_COMMAND = PROJECT_ROOT / ".venv" / "Scripts" / "labelImg.exe"
 
 
 def dataset_root() -> Path:
-    """Return the configured dataset directory."""
+    """返回配置的数据集目录。"""
     return PROJECT_ROOT / "datasets" / DATASET_NAME
 
 
 def configuration_path() -> Path:
-    """Return the data configuration matching the selected target."""
+    """返回与标注目标匹配的数据配置。"""
     root = dataset_root()
     if LABEL_TARGET == "unlabeled":
         return root / "data.yaml"
@@ -34,7 +34,7 @@ def configuration_path() -> Path:
 
 
 def annotation_directories() -> tuple[Path, Path]:
-    """Return image and label directories for the selected target."""
+    """返回选定目标的图片和标签目录。"""
     root = dataset_root()
     if LABEL_TARGET == "unlabeled":
         return root / "images" / "unlabeled", root / "labels" / "unlabeled"
@@ -48,7 +48,7 @@ def annotation_directories() -> tuple[Path, Path]:
 
 
 def load_class_names(path: Path) -> list[str]:
-    """Load ordered class names from a dataset YAML file."""
+    """从数据集 YAML 文件加载有序类别名称。"""
     with path.open(encoding="utf-8") as stream:
         config: dict[str, Any] = yaml.safe_load(stream) or {}
     names = config.get("names")
@@ -60,14 +60,14 @@ def load_class_names(path: Path) -> list[str]:
 
 
 def write_class_file(names: list[str]) -> Path:
-    """Write a temporary LabelImg class list and return its path."""
+    """写入临时 LabelImg 类别文件并返回路径。"""
     class_file = PROJECT_ROOT / ".labelimg-classes.txt"
     class_file.write_text("\n".join(names) + "\n", encoding="utf-8")
     return class_file
 
 
 def validate_paths(image_dir: Path, label_dir: Path, data_file: Path) -> None:
-    """Validate configured paths before starting LabelImg."""
+    """启动 LabelImg 前检查配置路径。"""
     if not image_dir.is_dir():
         raise FileNotFoundError(f"图片目录不存在: {image_dir}")
     if not data_file.is_file():
@@ -76,7 +76,7 @@ def validate_paths(image_dir: Path, label_dir: Path, data_file: Path) -> None:
 
 
 def patch_labelimg_compatibility() -> None:
-    """Patch LabelImg's PyQt5 float scroll-bar compatibility issue."""
+    """修补 LabelImg 的 PyQt5 浮点滚动条兼容问题。"""
     patches = {
         "labelImg.labelImg": {
             "bar.setValue(bar.value() + bar.singleStep() * units)": (
@@ -119,7 +119,7 @@ def patch_labelimg_compatibility() -> None:
 
 
 def main() -> None:
-    """Start LabelImg with the selected dataset directories."""
+    """使用选定的数据集目录启动 LabelImg。"""
     image_dir, label_dir = annotation_directories()
     data_file = configuration_path()
     validate_paths(image_dir, label_dir, data_file)
@@ -133,12 +133,14 @@ def main() -> None:
         str(class_file),
         str(label_dir),
     ]
-    print(f"图片目录: {image_dir}")
+    print("[准备] 启动人工标注工具", flush=True)
+    print(f"图片目录: {image_dir}", flush=True)
     print(f"标签目录: {label_dir}")
     print(f"类别配置: {data_file}")
     if not LABELIMG_COMMAND.is_file():
         raise FileNotFoundError(f"LabelImg executable not found: {LABELIMG_COMMAND}")
     subprocess.run(command, check=True)
+    print("[完成] LabelImg 已退出", flush=True)
 
 
 if __name__ == "__main__":

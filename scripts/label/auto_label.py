@@ -1,4 +1,4 @@
-"""Generate YOLO labels for unlabeled images with a trained small model."""
+"""使用训练好的小模型为 unlabeled 图片生成 YOLO 标签。"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import yaml
 from ultralytics import YOLO
 from tqdm import tqdm
 
-# Edit these values before running the script.
+# 运行前修改本区域配置。
 PROJECT_NAME = "template"
 CONFIDENCE_THRESHOLD = 0.5
 IOU_THRESHOLD = 0.45
@@ -23,12 +23,12 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 
 def config_path() -> Path:
-    """Return the automatic-labeling training configuration path."""
+    """返回自动打标训练配置路径。"""
     return CONFIG_ROOT / PROJECT_NAME / "train.yaml"
 
 
 def load_config(path: Path) -> dict[str, Any]:
-    """Load an automatic-labeling YAML configuration."""
+    """加载自动打标 YAML 配置。"""
     if not path.is_file():
         raise FileNotFoundError(f"自动打标配置不存在: {path}")
     with path.open(encoding="utf-8") as stream:
@@ -39,13 +39,13 @@ def load_config(path: Path) -> dict[str, Any]:
 
 
 def resolve_path(value: str | Path) -> Path:
-    """Resolve a project-relative path against the repository root."""
+    """将工程相对路径解析为相对于仓库根目录的路径。"""
     path = Path(value)
     return path if path.is_absolute() else (PROJECT_ROOT / path).resolve()
 
 
 def dataset_root(data_path: Path) -> Path:
-    """Return the main dataset root from the label-model data YAML path."""
+    """根据小模型数据配置返回主数据集根目录。"""
     label_model_root = data_path.parent
     if label_model_root.name != "label_model":
         raise ValueError(f"自动打标数据配置必须位于 label_model 目录: {data_path}")
@@ -53,14 +53,14 @@ def dataset_root(data_path: Path) -> Path:
 
 
 def model_path(config: dict[str, Any]) -> Path:
-    """Locate the trained automatic-labeling model checkpoint."""
+    """定位训练好的自动打标模型权重。"""
     project = str(config.get("project", PROJECT_NAME))
     experiment = str(config.get("name", "train"))
     return PROJECT_ROOT / "runs" / "auto_label" / project / experiment / "weights" / "best.pt"
 
 
 def write_labels(result: Any, label_path: Path) -> bool:
-    """Write normalized YOLO detections and return whether detections exist."""
+    """写入归一化 YOLO 检测结果，并返回是否存在检测结果。"""
     boxes = result.boxes
     detections = []
     if boxes is not None and len(boxes) > 0:
@@ -78,7 +78,7 @@ def write_labels(result: Any, label_path: Path) -> bool:
 
 
 def main() -> None:
-    """Predict labels for all unlabeled images."""
+    """为全部未标注图片预测标签。"""
     if not 0 <= CONFIDENCE_THRESHOLD <= 1:
         raise ValueError("CONFIDENCE_THRESHOLD 必须在 0 和 1 之间")
     if not 0 <= IOU_THRESHOLD <= 1:
@@ -109,11 +109,13 @@ def main() -> None:
         return
 
     model = YOLO(str(checkpoint))
+    print("[准备] 自动打标配置", flush=True)
     print(f"模型: {checkpoint}", flush=True)
     print(f"输入目录: {image_dir}", flush=True)
     print(f"输出目录: {label_dir}", flush=True)
     print(f"设备: CUDA:0 ({torch.cuda.get_device_name(0)})", flush=True)
 
+    print("[处理] 开始预测并写入标签", flush=True)
     generated = 0
     skipped = 0
     empty = 0
@@ -142,6 +144,7 @@ def main() -> None:
                 generated=generated, skipped=skipped, empty=empty
             )
 
+    print("[完成] 自动打标完成", flush=True)
     print(f"图片总数: {len(images)}", flush=True)
     print(f"生成标签: {generated}", flush=True)
     print(f"跳过已有标签: {skipped}", flush=True)

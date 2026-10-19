@@ -1,4 +1,4 @@
-"""Train a small YOLO11 model for automatic image labeling."""
+"""训练用于自动打标的 YOLO11 小模型。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import torch
 import yaml
 from ultralytics import YOLO
 
-# Edit this value to select a project under configs/auto_label/.
+# 选择 configs/auto_label/ 下的工程配置。
 PROJECT_NAME = "template"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -18,12 +18,12 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 
 def config_path() -> Path:
-    """Return the selected project's automatic-labeling config."""
+    """返回选定工程的自动打标配置。"""
     return CONFIG_ROOT / PROJECT_NAME / "train.yaml"
 
 
 def load_config(path: Path) -> dict[str, Any]:
-    """Load and validate a YAML training configuration."""
+    """加载并检查 YAML 训练配置。"""
     if not path.is_file():
         raise FileNotFoundError(f"自动打标小模型配置不存在: {path}")
     with path.open(encoding="utf-8") as stream:
@@ -34,13 +34,13 @@ def load_config(path: Path) -> dict[str, Any]:
 
 
 def resolve_path(value: str | Path) -> Path:
-    """Resolve a project-relative path against the repository root."""
+    """将工程相对路径解析为仓库根目录下的路径。"""
     path = Path(value)
     return path if path.is_absolute() else (PROJECT_ROOT / path).resolve()
 
 
 def validate_paths(config: dict[str, Any]) -> tuple[Path, Path]:
-    """Validate the dataset config and local model weight paths."""
+    """检查数据配置和本地模型权重路径。"""
     for key in ("data", "weights"):
         if key not in config:
             raise KeyError(f"训练配置缺少字段: {key}")
@@ -58,12 +58,12 @@ def validate_paths(config: dict[str, Any]) -> tuple[Path, Path]:
 
 
 def dataset_root(data_path: Path) -> Path:
-    """Return the label-model dataset root from its data YAML path."""
+    """根据数据配置返回小模型数据集根目录。"""
     return data_path.parent
 
 
 def count_pairs(image_dir: Path, label_dir: Path) -> tuple[int, int]:
-    """Return image count and image count missing matching labels."""
+    """返回图片数量和缺少对应标签的图片数量。"""
     if not image_dir.is_dir() or not label_dir.is_dir():
         raise FileNotFoundError(f"小模型数据目录不完整: {image_dir.parent}")
 
@@ -79,7 +79,7 @@ def count_pairs(image_dir: Path, label_dir: Path) -> tuple[int, int]:
 
 
 def validate_dataset(data_path: Path) -> tuple[int, int, int, int]:
-    """Check train and val image-label pairing and return their counts."""
+    """检查 train、val 图片标签配对并返回统计数量。"""
     root = dataset_root(data_path)
     train_images, train_missing = count_pairs(
         root / "images" / "train", root / "labels" / "train"
@@ -93,7 +93,7 @@ def validate_dataset(data_path: Path) -> tuple[int, int, int, int]:
 
 
 def training_arguments(config: dict[str, Any], data_path: Path) -> dict[str, Any]:
-    """Build Ultralytics arguments and an absolute output project path."""
+    """构造 Ultralytics 参数和绝对输出路径。"""
     arguments = dict(config)
     arguments.pop("weights", None)
     project = str(arguments.get("project", PROJECT_NAME))
@@ -103,7 +103,7 @@ def training_arguments(config: dict[str, Any], data_path: Path) -> dict[str, Any
 
 
 def main() -> None:
-    """Train the automatic-labeling model."""
+    """训练自动打标模型。"""
     config = load_config(config_path())
     data_path, weights_path = validate_paths(config)
     train_count, train_missing, val_count, val_missing = validate_dataset(data_path)
@@ -113,6 +113,7 @@ def main() -> None:
 
     project = config.get("project", PROJECT_NAME)
     experiment = config.get("name", "train")
+    print("[准备] 自动打标小模型训练配置", flush=True)
     print(f"工程: {PROJECT_NAME}", flush=True)
     print(f"数据配置: {data_path}", flush=True)
     print(f"预训练权重: {weights_path}", flush=True)
@@ -121,6 +122,7 @@ def main() -> None:
     print(f"验证集图片: {val_count}，缺少标签: {val_missing}", flush=True)
     print(f"训练结果: runs/auto_label/{project}/{experiment}", flush=True)
 
+    print("[处理] 开始训练，以下为 Ultralytics 实时进度", flush=True)
     model = YOLO(str(weights_path))
     model.train(**arguments)
 

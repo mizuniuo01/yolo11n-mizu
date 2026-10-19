@@ -1,4 +1,4 @@
-"""Train a YOLO11 model using a project-specific YAML configuration."""
+"""根据工程配置训练 YOLO11 主模型。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import yaml
 import torch
 from ultralytics import YOLO
 
-# Edit this value to select a project under configs/train/.
+# 选择 configs/train/ 下的工程配置。
 PROJECT_NAME = "template"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -17,12 +17,12 @@ CONFIG_ROOT = PROJECT_ROOT / "configs" / "train"
 
 
 def config_path() -> Path:
-    """Return the selected project's training configuration path."""
+    """返回选定工程的训练配置路径。"""
     return CONFIG_ROOT / PROJECT_NAME / "train.yaml"
 
 
 def load_config(path: Path) -> dict[str, Any]:
-    """Load and validate a training YAML configuration."""
+    """加载并检查训练 YAML 配置。"""
     if not path.is_file():
         raise FileNotFoundError(f"训练配置不存在: {path}")
     with path.open(encoding="utf-8") as stream:
@@ -33,13 +33,13 @@ def load_config(path: Path) -> dict[str, Any]:
 
 
 def resolve_path(value: str | Path) -> Path:
-    """Resolve a project-relative path against the repository root."""
+    """将工程相对路径解析为仓库根目录下的路径。"""
     path = Path(value)
     return path if path.is_absolute() else (PROJECT_ROOT / path).resolve()
 
 
 def validate_config(config: dict[str, Any]) -> tuple[Path, Path]:
-    """Validate required paths and return the dataset and weight paths."""
+    """检查必要路径并返回数据配置和权重路径。"""
     for key in ("data", "weights"):
         if key not in config:
             raise KeyError(f"训练配置缺少字段: {key}")
@@ -57,7 +57,7 @@ def validate_config(config: dict[str, Any]) -> tuple[Path, Path]:
 
 
 def training_arguments(config: dict[str, Any], data_path: Path) -> dict[str, Any]:
-    """Build Ultralytics training arguments from the project configuration."""
+    """根据工程配置构造 Ultralytics 训练参数。"""
     arguments = dict(config)
     arguments.pop("weights", None)
     arguments["data"] = str(data_path)
@@ -69,7 +69,7 @@ def training_arguments(config: dict[str, Any], data_path: Path) -> dict[str, Any
 
 
 def validate_device(arguments: dict[str, Any]) -> None:
-    """Require the configured CUDA device on this GPU training machine."""
+    """检查本机训练所需的 CUDA 设备。"""
     device = arguments.get("device", 0)
     if device != 0:
         raise ValueError("本机训练配置必须使用 device: 0")
@@ -83,7 +83,8 @@ def print_training_info(
     project: str,
     experiment: str,
 ) -> None:
-    """Print training details before Ultralytics starts its progress display."""
+    """在 Ultralytics 显示进度前打印训练信息。"""
+    print("[准备] 主模型训练配置", flush=True)
     print(f"工程: {PROJECT_NAME}", flush=True)
     print(f"数据配置: {data_path}", flush=True)
     print(f"预训练权重: {weights_path}", flush=True)
@@ -95,7 +96,7 @@ def print_training_info(
 
 
 def main() -> None:
-    """Load the selected project and start training."""
+    """加载选定工程并开始训练。"""
     path = config_path()
     config = load_config(path)
     data_path, weights_path = validate_config(config)
@@ -106,6 +107,7 @@ def main() -> None:
     experiment = arguments.get("name", "train")
     print_training_info(data_path, weights_path, project, experiment)
 
+    print("[处理] 开始训练，以下为 Ultralytics 实时进度", flush=True)
     model = YOLO(str(weights_path))
     model.train(**arguments)
 
